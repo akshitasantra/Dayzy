@@ -21,16 +21,29 @@ struct ContentView: View {
                 .padding(.horizontal, AppLayout.screenPadding)
 
                 // Header block
-                VStack(spacing: 10) {
-                    Text("Today")
-                        .font(AppFonts.vt323(42))
-                        .foregroundColor(AppColors.pinkPrimary)
+                VStack(spacing: 4) {
+                    // Stars + Today text in one line
+                    HStack(spacing: 8) { // small spacing between stars and text
+                        Image("star")
+                            .resizable()
+                            .rotationEffect(.degrees(90))
+                            .frame(width: 24, height: 24)
 
+                        Text("Today")
+                            .font(AppFonts.vt323(42))
+                            .foregroundColor(AppColors.pinkPrimary)
+
+                        Image("star")
+                            .resizable()
+                            .rotationEffect(.degrees(90))
+                            .frame(width: 24, height: 24)
+                    }
+
+                    // Date below
                     Text(formattedDate())
                         .font(AppFonts.rounded(16))
                         .foregroundColor(AppColors.pinkPrimary)
                 }
-                .padding(.top, 43) // matches your Figma spacing
 
                 // Current Activity Card
                 CurrentActivityCard()
@@ -39,7 +52,7 @@ struct ContentView: View {
                 
                 // Quick Start Row
                 QuickStartRow()
-                    .padding(.top, 24)
+                    .padding(.top, 16)
                 
                 // Timeline
                 TimelineSection()
@@ -51,9 +64,10 @@ struct ContentView: View {
 
     func formattedDate() -> String {
         let f = DateFormatter()
-        f.dateStyle = .full
+        f.dateFormat = "MM-dd · EEEE · h:mm a"
         return f.string(from: Date())
     }
+
 }
 
 #Preview {

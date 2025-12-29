@@ -58,7 +58,7 @@ struct TimelineSection: View {
             )
         }
         .padding(.horizontal, AppLayout.screenPadding)
-        .padding(.top, 32)
+        .padding(.top, 8)
     }
 }
 
