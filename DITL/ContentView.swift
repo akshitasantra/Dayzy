@@ -146,7 +146,7 @@ struct TodayView: View {
                         EmptyTimelineView()
                             .padding(.horizontal, AppLayout.screenPadding)
                     } else {
-                        TimelineSection()
+                        TimelineSection(timeline: timeline)
                     }
                 }
                 .padding(.top, 24)
