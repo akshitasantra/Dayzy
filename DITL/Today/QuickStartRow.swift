@@ -2,7 +2,9 @@ import SwiftUI
 
 struct QuickStartRow: View {
 
-    let buttons = ["Homework", "Scroll", "Code", "Eat"] // Example button labels
+    let buttons = ["Homework", "Scroll", "Code", "Eat"]
+    let disabled: Bool
+    let onStart: (String) -> Void
 
     let columns = [
         GridItem(.fixed(100), spacing: 6),
@@ -10,34 +12,29 @@ struct QuickStartRow: View {
     ]
 
     var body: some View {
-        LazyVGrid(columns: columns, alignment: .center, spacing: 12) {
+        LazyVGrid(columns: columns, spacing: 12) {
             ForEach(buttons, id: \.self) { title in
-                Text(title)
-                    .font(AppFonts.rounded(10))
-                    .foregroundColor(AppColors.black)
-                    .padding(.vertical, 12)
-                    .frame(width: 100)
-                    .background(AppColors.lavenderQuick)
-                    .cornerRadius(AppLayout.cornerRadius)
-                    // Black outline
-                    .overlay(
-                        RoundedRectangle(cornerRadius: AppLayout.cornerRadius)
-                            .stroke(Color.black.opacity(1.0), lineWidth: 1)
-                    )
-                    // Drop shadow
-                    .shadow(color: Color.black.opacity(0.10), radius: 12, x: 0, y: 4)
+                Button {
+                    onStart(title)
+                } label: {
+                    Text(title)
+                        .font(AppFonts.rounded(10))
+                        .foregroundColor(AppColors.black)
+                        .padding(.vertical, 12)
+                        .frame(width: 100)
+                        .background(AppColors.lavenderQuick)
+                        .cornerRadius(AppLayout.cornerRadius)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: AppLayout.cornerRadius)
+                                .stroke(Color.black, lineWidth: 1)
+                        )
+                        .shadow(color: Color.black.opacity(0.10), radius: 12, x: 0, y: 4)
+                        .opacity(disabled ? 0.5 : 1)
+                }
+                .disabled(disabled)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .center)
+        .frame(maxWidth: .infinity)
         .padding(.horizontal, AppLayout.screenPadding)
     }
 }
-
-#Preview {
-    ZStack {
-        AppColors.background
-        QuickStartRow()
-            .padding(.top, 20)
-    }
-}
-

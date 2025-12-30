@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct CurrentActivityCard: View {
+    let activity: Activity
+    
     var body: some View {
         ZStack {
             // Card background + content
@@ -13,7 +15,7 @@ struct CurrentActivityCard: View {
                     .multilineTextAlignment(.center)
 
                 // Started at
-                Text("Started at 8:12 AM")
+                Text("Started at \(formattedTime(activity.startTime))")
                     .font(AppFonts.rounded(24))
                     .foregroundColor(AppColors.black)
                     .multilineTextAlignment(.center)
@@ -87,12 +89,74 @@ struct CurrentActivityCard: View {
             }
         }
     }
+    
+    func formattedTime(_ date: Date) -> String {
+            let f = DateFormatter()
+            f.timeStyle = .short
+            return f.string(from: date)
+        }
 }
+struct NoActivityCard: View {
+    let onStartTapped: () -> Void
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            Text("No Activity Running")
+                .font(AppFonts.rounded(24))
+                .foregroundColor(AppColors.black)
+                .multilineTextAlignment(.center)
 
-#Preview {
-    ZStack {
-        AppColors.background
-        CurrentActivityCard()
-            .padding()
+            Text("Start something to begin tracking!")
+                .font(AppFonts.vt323(18))
+                .foregroundColor(AppColors.black)
+            
+            Button(action: onStartTapped) {
+                            Text("Start Activity")
+                    .font(AppFonts.rounded(24))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 32)
+                    .padding(.vertical, 16)
+                    .background(AppColors.pinkPrimary)
+                    .cornerRadius(AppLayout.cornerRadius)
+                }.overlay(
+                    RoundedRectangle(cornerRadius: AppLayout.cornerRadius)
+                        .stroke(Color.black, lineWidth: 1)
+                )
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity)
+        .frame(height: 200)
+        .background(AppColors.pinkCard)
+        .cornerRadius(AppLayout.cornerRadius)
+        .overlay(
+            RoundedRectangle(cornerRadius: AppLayout.cornerRadius)
+                .stroke(Color.black, lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.1), radius: 12, x: 0, y: 4)
+        // Decorative icons anchored to card corners
+        .overlay(alignment: .topLeading) {
+            Image("love")
+                .resizable()
+                .frame(width: 32, height: 32)
+                .padding(12)
+        }
+        .overlay(alignment: .bottomTrailing) {
+            Image("love")
+                .resizable()
+                .frame(width: 32, height: 32)
+                .padding(12)
+        }
+        .overlay(alignment: .topTrailing) {
+            Image("love-always-wins")
+                .resizable()
+                .frame(width: 32, height: 32)
+                .padding(12)
+        }
+        .overlay(alignment: .bottomLeading) {
+            Image("love-always-wins")
+                .resizable()
+                .frame(width: 32, height: 32)
+                .padding(12)
+        }
     }
 }

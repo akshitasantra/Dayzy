@@ -1,29 +1,61 @@
 import SwiftUI
 
-// MARK: Root View
+// MARK: - Root View
 struct ContentView: View {
     @State private var showingSettings = false
+    @State private var showingManualStart = false
+
+    @State private var currentActivity: Activity? = nil
+    @State private var timeline: [Activity] = []
 
     var body: some View {
         ZStack {
             if showingSettings {
                 SettingsView {
-                    // Back action
                     showingSettings = false
                 }
             } else {
-                TodayView {
-                    // Settings button tapped
-                    showingSettings = true
-                }
+                TodayView(
+                    currentActivity: currentActivity,
+                    timeline: timeline,
+                    onSettingsTapped: {
+                        showingSettings = true
+                    },
+                    onQuickStart: startActivity,
+                    onManualStartTapped: {
+                        showingManualStart = true
+                    }
+                )
+            }
+        }
+        .sheet(isPresented: $showingManualStart) {
+            ManualStartSheet { title in
+                startActivity(title: title)
+                showingManualStart = false
             }
         }
     }
+
+    // MARK: - Activity Actions
+    private func startActivity(title: String) {
+        guard currentActivity == nil else { return }
+
+        currentActivity = Activity(
+            title: title,
+            startTime: Date(),
+            endTime: nil
+        )
+    }
 }
 
-// MARK: Today View
+
+// MARK: - Today View
 struct TodayView: View {
-    var onSettingsTapped: () -> Void
+    let currentActivity: Activity?
+    let timeline: [Activity]
+    let onSettingsTapped: () -> Void
+    let onQuickStart: (String) -> Void
+    let onManualStartTapped: () -> Void
 
     var body: some View {
         ZStack {
@@ -31,7 +63,8 @@ struct TodayView: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // Floating settings button
+
+                // Settings Button
                 HStack {
                     Spacer()
                     Button(action: onSettingsTapped) {
@@ -45,7 +78,7 @@ struct TodayView: View {
                 .padding(.top, 24)
                 .padding(.horizontal, AppLayout.screenPadding)
 
-                // Header block
+                // Header
                 VStack(spacing: 4) {
                     HStack(spacing: 8) {
                         Image("star")
@@ -68,18 +101,43 @@ struct TodayView: View {
                         .foregroundColor(AppColors.pinkPrimary)
                 }
 
-                // Current Activity Card
-                CurrentActivityCard()
-                    .padding(.top, 32)
-                    .padding(.horizontal, AppLayout.screenPadding)
-                
-                // Quick Start Row
-                QuickStartRow()
-                    .padding(.top, 16)
-                
+                // Current Activity
+                Group {
+                    if let activity = currentActivity {
+                        CurrentActivityCard(activity: activity)
+                    } else {
+                        NoActivityCard(
+                            onStartTapped: onManualStartTapped
+                        )
+                    }
+                }
+                .padding(.top, 32)
+                .padding(.horizontal, AppLayout.screenPadding)
+
+                // Quick Start
+                QuickStartRow(
+                    disabled: currentActivity != nil,
+                    onStart: onQuickStart
+                )
+                .padding(.top, 16)
+
                 // Timeline
-                TimelineSection()
-                
+                VStack(spacing: 12) {
+                    Text("Today’s Timeline")
+                        .font(AppFonts.vt323(40))
+                        .foregroundColor(AppColors.black)
+                        .frame(maxWidth: .infinity)
+                        .multilineTextAlignment(.center)
+
+                    if timeline.isEmpty {
+                        EmptyTimelineView()
+                            .padding(.horizontal, AppLayout.screenPadding)
+                    } else {
+                        TimelineSection()
+                    }
+                }
+                .padding(.top, 24)
+
                 Spacer()
             }
         }
@@ -92,7 +150,8 @@ struct TodayView: View {
     }
 }
 
-// MARK: Settings View
+
+// MARK: - Settings View
 struct SettingsView: View {
     var onBack: () -> Void
 
@@ -116,7 +175,6 @@ struct SettingsView: View {
                 .padding(.top, 24)
                 .padding(.horizontal, AppLayout.screenPadding)
 
-                
                 VStack(spacing: 32) {
                     HStack(spacing: 8) {
                         Image("star")
@@ -145,4 +203,3 @@ struct SettingsView: View {
         }
     }
 }
-
