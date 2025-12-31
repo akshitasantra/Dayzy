@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		8403DE132F048E2F006F393F /* SQLite in Frameworks */ = {isa = PBXBuildFile; productRef = 8403DE122F048E2F006F393F /* SQLite */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		842DA2CA2EF50BA8003D53C7 /* DITL.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DITL.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -36,6 +40,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8403DE132F048E2F006F393F /* SQLite in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -78,6 +83,7 @@
 			);
 			name = DITL;
 			packageProductDependencies = (
+				8403DE122F048E2F006F393F /* SQLite */,
 			);
 			productName = DITL;
 			productReference = 842DA2CA2EF50BA8003D53C7 /* DITL.app */;
@@ -107,6 +113,9 @@
 			);
 			mainGroup = 842DA2C12EF50BA8003D53C7;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				8403DE112F048E2F006F393F /* XCRemoteSwiftPackageReference "SQLite" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 842DA2CB2EF50BA8003D53C7 /* Products */;
 			projectDirPath = "";
@@ -360,6 +369,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		8403DE112F048E2F006F393F /* XCRemoteSwiftPackageReference "SQLite" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/stephencelis/SQLite.swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.15.4;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		8403DE122F048E2F006F393F /* SQLite */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8403DE112F048E2F006F393F /* XCRemoteSwiftPackageReference "SQLite" */;
+			productName = SQLite;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 842DA2C22EF50BA8003D53C7 /* Project object */;
 }

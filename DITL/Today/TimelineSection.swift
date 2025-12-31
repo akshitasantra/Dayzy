@@ -2,63 +2,83 @@ import SwiftUI
 
 struct TimelineSection: View {
     let timeline: [Activity]
+    let currentActivity: Activity?
+
+    let onDelete: (Activity) -> Void
+    let onEdit: (Activity) -> Void
+
+    @State private var pendingDeleteId: Int? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // Caption
+
             Text("Add a clip & track your time here")
                 .font(AppFonts.rounded(12))
                 .foregroundColor(AppColors.black)
                 .frame(maxWidth: .infinity)
                 .multilineTextAlignment(.center)
 
-            // Timeline Card
-            VStack {
-                if timeline.isEmpty {
-                    EmptyTimelineView()
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                } else {
-                    ScrollView {
-                        VStack(spacing: 16) {
-                            ForEach(timeline) { activity in
-                                TimelineEntryRow(
-                                    timeRange: formattedTimeRange(for: activity),
-                                    activity: activity.title
-                                )
-                            }
-                        }
-                        .padding(16)
+            List {
+                // Active activity (non-deletable)
+                if let active = currentActivity {
+                    TimelineEntryRow(
+                        timeRange: formattedTimeRange(
+                            start: active.startTime,
+                            end: Date()
+                        ),
+                        activity: active.title
+                    )
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                }
+
+                ForEach(timeline.reversed()) { activity in
+                    TimelineEntryRow(
+                        timeRange: formattedTimeRange(
+                            start: activity.startTime,
+                            end: activity.endTime
+                        ),
+                        activity: activity.title
+                    )
+                    .onTapGesture(count: 2) {
+                        onEdit(activity)
                     }
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button(role: .destructive) {
+                                onDelete(activity)
+                                pendingDeleteId = nil
+                            } label: {
+                                Label("Confirm", systemImage: "trash.fill")
+                            }
+                    }
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
                 }
             }
+            .listStyle(.plain)
             .frame(height: 140)
+            .scrollContentBackground(.hidden)
             .background(AppColors.pinkCard)
             .cornerRadius(AppLayout.cornerRadius)
             .overlay(
                 RoundedRectangle(cornerRadius: AppLayout.cornerRadius)
                     .stroke(Color.black, lineWidth: 1)
             )
-            .shadow(
-                color: Color.black.opacity(0.10),
-                radius: 12,
-                x: 0,
-                y: 4
-            )
+            .shadow(color: .black.opacity(0.10), radius: 12, x: 0, y: 4)
         }
         .padding(.horizontal, AppLayout.screenPadding)
         .padding(.top, 8)
     }
 
-    private func formattedTimeRange(for activity: Activity) -> String {
+    private func formattedTimeRange(start: Date, end: Date?) -> String {
         let formatter = DateFormatter()
         formatter.timeStyle = .short
-
-        let start = formatter.string(from: activity.startTime)
-        let end = activity.endTime != nil ? formatter.string(from: activity.endTime!) : "…"
-        return "\(start) – \(end)"
+        return "\(formatter.string(from: start)) – \(formatter.string(from: end ?? Date()))"
     }
 }
+
+
+
 
 struct EmptyTimelineView: View {
     var body: some View {
