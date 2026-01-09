@@ -1,23 +1,22 @@
 import SwiftUI
 
 struct EditActivitySheet: View {
-    enum Mode{
+    enum Mode {
         case add, edit
     }
     
     let activity: Activity
     let mode: Mode
+    let onSave: (String, Date, Date) -> Void
 
     @State private var title: String
     @State private var startTime: Date
     @State private var endTime: Date
-    
+
     @AppStorage("appTheme") private var appTheme: AppTheme = .light
-
-    let onSave: (String, Date, Date) -> Void
-
     @Environment(\.dismiss) private var dismiss
 
+    // MARK: Init
     init(activity: Activity, mode: Mode = .edit, onSave: @escaping (String, Date, Date) -> Void) {
         self.activity = activity
         self.mode = mode
@@ -27,14 +26,16 @@ struct EditActivitySheet: View {
         _endTime = State(initialValue: activity.endTime ?? Date())
     }
 
+    // MARK: Body
     var body: some View {
         VStack(spacing: 24) {
 
+            // Header
             Text(mode == .add ? "Add Activity" : "Edit Activity")
                 .font(AppFonts.vt323(32))
                 .foregroundColor(AppColors.black(for: appTheme))
 
-            // Title field
+            // Title input
             TextField("Activity name", text: $title)
                 .padding()
                 .background(AppColors.lavenderQuick(for: appTheme))
@@ -44,7 +45,7 @@ struct EditActivitySheet: View {
                         .stroke(AppColors.black(for: appTheme), lineWidth: 1)
                 )
 
-            // Start time
+            // Start time picker
             DatePicker(
                 "Start Time",
                 selection: $startTime,
@@ -52,7 +53,7 @@ struct EditActivitySheet: View {
             )
             .font(AppFonts.rounded(16))
 
-            // End time
+            // End time picker
             DatePicker(
                 "End Time",
                 selection: $endTime,
@@ -60,6 +61,7 @@ struct EditActivitySheet: View {
             )
             .font(AppFonts.rounded(16))
 
+            // Save button
             Button {
                 guard !title.trimmingCharacters(in: .whitespaces).isEmpty else { return }
                 guard endTime >= startTime else { return }
@@ -82,4 +84,3 @@ struct EditActivitySheet: View {
         .presentationDetents([.medium])
     }
 }
-

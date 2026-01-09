@@ -1,19 +1,35 @@
 import SwiftUI
 
-struct WrappedTotalTimeCard: View {
+struct NoActivityCard: View {
     @AppStorage("appTheme") private var appTheme: AppTheme = .light
     
-    let totalMinutes: Int
-
+    let onStartTapped: () -> Void
+    
     var body: some View {
         VStack(spacing: 12) {
-            Text("Total Time Today")
+            // Main card
+            Text("No Activity Running")
                 .font(AppFonts.rounded(24))
                 .foregroundColor(AppColors.black(for: appTheme))
+                .multilineTextAlignment(.center)
 
-            Text("\(totalMinutes) minutes")
-                .font(AppFonts.vt323(36))
-                .foregroundColor(AppColors.pinkPrimary(for: appTheme))
+            Text("Start something to begin tracking!")
+                .font(AppFonts.vt323(18))
+                .foregroundColor(AppColors.black(for: appTheme))
+            
+            Button(action: onStartTapped) {
+                            Text("Start Activity")
+                    .font(AppFonts.rounded(24))
+                    .foregroundColor(AppColors.white(for: appTheme))
+                    .padding(.horizontal, 32)
+                    .padding(.vertical, 16)
+                    .background(AppColors.pinkPrimary(for: appTheme))
+                    .cornerRadius(AppLayout.cornerRadius)
+            }.withClickSound()
+            .overlay(
+                RoundedRectangle(cornerRadius: AppLayout.cornerRadius)
+                    .stroke(AppColors.black(for: appTheme), lineWidth: 1)
+            )
         }
         .padding(20)
         .frame(maxWidth: .infinity)
@@ -24,9 +40,9 @@ struct WrappedTotalTimeCard: View {
             RoundedRectangle(cornerRadius: AppLayout.cornerRadius)
                 .stroke(AppColors.black(for: appTheme), lineWidth: 1)
         )
-        .shadow(color: AppColors.black(for: appTheme).opacity(0.10), radius: 12, x: 0, y: 4)
-
-        // Decorative icons (same as ActivityCard)
+        .shadow(color: .black.opacity(0.1), radius: 12, x: 0, y: 4)
+        
+        // Decorative corner icons
         .overlay(alignment: .topLeading) {
             Image("love")
                 .resizable()

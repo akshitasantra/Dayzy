@@ -206,22 +206,33 @@ class DatabaseManager {
         return rows.first?["total"] as? Int ?? 0
     }
 
-    func mostTimeConsumingActivities() -> [(Activity, Int)] {
+    func mostTimeConsumingActivitiesToday(limit: Int = 5) -> [(Activity, Int)] {
+        let calendar = Calendar.current
+        let startOfDay = calendar.startOfDay(for: Date())
+        let startInterval = startOfDay.timeIntervalSince1970
+        let endInterval = startInterval + 86400
+
         let sql = """
-            SELECT id, SUM(duration_minutes) as total_minutes
+            SELECT
+                MIN(id) AS first_id,
+                title,
+                SUM(duration_minutes) AS total_minutes
             FROM activities
-            GROUP BY id
+            WHERE start_time >= \(startInterval)
+              AND start_time < \(endInterval)
+            GROUP BY title
             ORDER BY total_minutes DESC
-            LIMIT 5;
+            LIMIT \(limit);
             """
+
         let rows = query(sql: sql)
-        
+
         return rows.compactMap { row in
-            guard let id = row["id"] as? Int,
+            guard let id = row["first_id"] as? Int,
                   let total = row["total_minutes"] as? Int,
                   let activity = readActivity(id: id)
             else { return nil }
-            
+
             return (activity, total)
         }
     }
@@ -252,5 +263,4 @@ extension Date {
         return f.string(from: self)
     }
 }
-
 

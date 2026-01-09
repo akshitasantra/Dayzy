@@ -2,16 +2,19 @@ import SwiftUI
 
 struct ManualStartSheet: View {
     @AppStorage("appTheme") private var appTheme: AppTheme = .light
-    
     @State private var title: String = ""
+
     let onStart: (String) -> Void
 
     var body: some View {
         VStack(spacing: 24) {
+
+            // Header
             Text("Start Activity")
                 .font(AppFonts.vt323(32))
                 .foregroundColor(AppColors.black(for: appTheme))
 
+            // Activity name input
             TextField("Activity name", text: $title)
                 .padding()
                 .background(AppColors.lavenderQuick(for: appTheme))
@@ -21,9 +24,11 @@ struct ManualStartSheet: View {
                         .stroke(AppColors.black(for: appTheme), lineWidth: 1)
                 )
 
+            // Start button
             Button {
-                guard !title.trimmingCharacters(in: .whitespaces).isEmpty else { return }
-                onStart(title)
+                let trimmed = title.trimmingCharacters(in: .whitespaces)
+                guard !trimmed.isEmpty else { return }
+                onStart(trimmed)
             } label: {
                 Text("Start")
                     .font(AppFonts.rounded(20))

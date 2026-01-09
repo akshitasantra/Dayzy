@@ -132,14 +132,14 @@ struct PreferenceButton: View {
                 Image(iconName)
                     .resizable()
                     .frame(width: 24, height: 24)
-                    .padding(.leading, 16) // shift right
-                    .frame(width: 40, alignment: .leading) // keep consistent x-position
+                    .padding(.leading, 16)
+                    .frame(width: 40, alignment: .leading)
 
                 Text(title)
                     .font(AppFonts.rounded(18))
                     .foregroundColor(.black)
 
-                Spacer() // push text left, keep button width consistent
+                Spacer()
             }
             .padding(.vertical, 16)
             .frame(width: 200)
