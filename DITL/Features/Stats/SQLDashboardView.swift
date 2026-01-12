@@ -93,11 +93,12 @@ struct SQLDashboardView: View {
 
     // MARK: Helpers
     private func loadSQLData() {
-        totalToday = DatabaseManager.shared.totalTimeToday()
-        mostTimeConsuming = Array(
-            DatabaseManager.shared
-                .mostTimeConsumingActivitiesToday()
-                .prefix(5)
-        )
+        let total = DatabaseManager.shared.totalTimeToday()
+        let activities = DatabaseManager.shared.mostTimeConsumingActivitiesToday()
+
+        DispatchQueue.main.async {
+            self.totalToday = total
+            self.mostTimeConsuming = Array(activities.prefix(5))
+        }
     }
 }

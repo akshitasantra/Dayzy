@@ -201,7 +201,17 @@ class DatabaseManager {
     // MARK: Example Queries
 
     func totalTimeToday() -> Int {
-        let sql = "SELECT SUM(duration_minutes) as total FROM activities WHERE DATE(start_time, 'unixepoch') = DATE('now');"
+        let calendar = Calendar.current
+        let startOfDay = calendar.startOfDay(for: Date())
+        let startInterval = startOfDay.timeIntervalSince1970
+        let endInterval = startInterval + 86400
+
+        let sql = """
+        SELECT COALESCE(SUM(duration_minutes), 0) AS total
+        FROM activities
+        WHERE start_time >= \(startInterval)
+          AND start_time < \(endInterval);
+        """
         let rows = query(sql: sql)
         return rows.first?["total"] as? Int ?? 0
     }
