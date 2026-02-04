@@ -3,16 +3,14 @@ import UIKit
 
 struct TabBarStyler {
 
-    static func apply(theme: AppTheme) {
-        let lavender = UIColor(AppColors.pinkPrimary(for: theme))
+    static func apply(cardColor: Color, primaryColor: Color) {
+        let lavender = UIColor(primaryColor)
         let unselected = UIColor.gray
 
         let appearance = UITabBarAppearance()
         appearance.configureWithOpaqueBackground()
 
-        appearance.backgroundColor = UIColor(
-            AppColors.background(for: theme)
-        )
+        appearance.backgroundColor = UIColor(cardColor)
 
         // Selected
         appearance.stackedLayoutAppearance.selected.iconColor = lavender

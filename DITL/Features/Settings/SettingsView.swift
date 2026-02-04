@@ -1,22 +1,30 @@
 import SwiftUI
 
 struct SettingsView: View {
-    @AppStorage("appTheme") private var appTheme: AppTheme = .light
-    
+    @ObservedObject private var themeManager = ThemeManager.shared
+
     var onBack: () -> Void
+
+    private var backgroundColor: Color {
+        themeManager.theme.useDarkBackground ? Color(hex: "#2A2A28") : Color.white
+    }
+
+    private var primaryColor: Color {
+        Color(hex: themeManager.theme.primaryColorHex)
+    }
 
     var body: some View {
         ZStack {
-            AppColors.background(for: appTheme)
+            backgroundColor
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
                 HStack {
                     Button(action: onBack) {
                         Image(systemName: "chevron.left")
-                            .foregroundColor(Color.black)
+                            .foregroundColor(backgroundColor == .black ? .white : .black)
                             .padding(10)
-                            .background(AppColors.lavenderQuick(for: appTheme))
+                            .background(Color.gray.opacity(0.2))
                             .clipShape(Circle())
                     }
                     Spacer()
@@ -33,7 +41,7 @@ struct SettingsView: View {
 
                         Text("Settings")
                             .font(AppFonts.vt323(42))
-                            .foregroundColor(AppColors.pinkPrimary(for: appTheme))
+                            .foregroundColor(primaryColor)
 
                         Image("star")
                             .resizable()

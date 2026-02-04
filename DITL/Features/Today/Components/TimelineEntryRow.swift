@@ -1,10 +1,13 @@
 import SwiftUI
 
 struct TimelineEntryRow: View {
-    @AppStorage("appTheme") private var appTheme: AppTheme = .light
+    @AppStorage("customThemeData") private var customThemeData: Data?
+
     
     let timeRange: String
     let activity: String
+    
+    private let bg = AppColors.card()
 
     var body: some View {
         HStack(alignment: .center, spacing: 24) {
@@ -12,14 +15,14 @@ struct TimelineEntryRow: View {
             // Time
             Text(timeRange)
                 .font(AppFonts.vt323(18))
-                .foregroundColor(AppColors.black(for: appTheme))
+                .foregroundColor(AppColors.text(on: bg))
                 .lineLimit(1)
                 .frame(width: 160, alignment: .leading)
 
             // Activity name
             Text(activity)
                 .font(AppFonts.vt323(18))
-                .foregroundColor(AppColors.black(for: appTheme))
+                .foregroundColor(AppColors.text(on: bg))
                 .lineLimit(1)
                 .truncationMode(.tail)       // adds "..." only if necessary
                 .layoutPriority(1)           // gives this text priority to expand

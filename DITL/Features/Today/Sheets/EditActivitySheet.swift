@@ -13,7 +13,9 @@ struct EditActivitySheet: View {
     @State private var startTime: Date
     @State private var endTime: Date
 
-    @AppStorage("appTheme") private var appTheme: AppTheme = .light
+@AppStorage("customThemeData") private var customThemeData: Data?
+
+
     @Environment(\.dismiss) private var dismiss
 
     // MARK: Init
@@ -33,16 +35,16 @@ struct EditActivitySheet: View {
             // Header
             Text(mode == .add ? "Add Activity" : "Edit Activity")
                 .font(AppFonts.vt323(32))
-                .foregroundColor(AppColors.black(for: appTheme))
+                .foregroundColor(Color.black)
 
             // Title input
             TextField("Activity name", text: $title)
                 .padding()
-                .background(AppColors.lavenderQuick(for: appTheme))
+                .background(AppColors.lavenderQuick())
                 .cornerRadius(AppLayout.cornerRadius)
                 .overlay(
                     RoundedRectangle(cornerRadius: AppLayout.cornerRadius)
-                        .stroke(AppColors.black(for: appTheme), lineWidth: 1)
+                        .stroke(Color.black, lineWidth: 1)
                 )
 
             // Start time picker
@@ -74,7 +76,7 @@ struct EditActivitySheet: View {
                     .foregroundColor(.white)
                     .padding(.horizontal, 40)
                     .padding(.vertical, 14)
-                    .background(AppColors.pinkPrimary(for: appTheme))
+                    .background(AppColors.primary())
                     .cornerRadius(AppLayout.cornerRadius)
             }
 

@@ -1,7 +1,8 @@
 import SwiftUI
 
 struct QuickStartRow: View {
-    @AppStorage("appTheme") private var appTheme: AppTheme = .light
+@AppStorage("customThemeData") private var customThemeData: Data?
+
 
     let activities: [String]
     let disabled: Bool
@@ -34,13 +35,13 @@ struct QuickStartRow: View {
                 .foregroundColor(Color.black)
                 .padding(.vertical, 12)
                 .frame(width: 100)
-                .background(AppColors.lavenderQuick(for: appTheme))
+                .background(AppColors.lavenderQuick())
                 .cornerRadius(AppLayout.cornerRadius)
                 .overlay(
                     RoundedRectangle(cornerRadius: AppLayout.cornerRadius)
-                        .stroke(AppColors.black(for: appTheme), lineWidth: 1)
+                        .stroke(Color.black, lineWidth: 1)
                 )
-                .shadow(color: AppColors.black(for: appTheme).opacity(0.10), radius: 12, x: 0, y: 4)
+                .shadow(color: Color.black.opacity(0.10), radius: 12, x: 0, y: 4)
                 .opacity(disabled ? 0.5 : 1)
         }
         .withClickSound()

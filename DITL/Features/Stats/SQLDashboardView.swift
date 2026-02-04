@@ -4,13 +4,15 @@ struct SQLDashboardView: View {
     @State private var totalToday: Int = 0
     @State private var mostTimeConsuming: [(Activity, Int)] = []
 
-    @AppStorage("appTheme") private var appTheme: AppTheme = .light
+@AppStorage("customThemeData") private var customThemeData: Data?
+
+
     
     let onSettingsTapped: () -> Void
 
     var body: some View {
         ZStack {
-            AppColors.background(for: appTheme)
+            AppColors.background()
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
@@ -22,9 +24,11 @@ struct SQLDashboardView: View {
                         onSettingsTapped()
                     } label: {
                         Image(systemName: "gearshape.fill")
-                            .foregroundColor(.black)
+                            .foregroundColor(Color.black)
+
+
                             .padding(10)
-                            .background(AppColors.lavenderQuick(for: appTheme))
+                            .background(AppColors.lavenderQuick())
                             .clipShape(Circle())
                     }
                 }
@@ -41,7 +45,7 @@ struct SQLDashboardView: View {
 
                         Text("DITL Wrapped")
                             .font(AppFonts.vt323(42))
-                            .foregroundColor(AppColors.pinkPrimary(for: appTheme))
+                            .foregroundColor(AppColors.primary())
 
                         Image("star")
                             .resizable()
@@ -51,7 +55,7 @@ struct SQLDashboardView: View {
 
                     Text("Your day, summarized")
                         .font(AppFonts.rounded(16))
-                        .foregroundColor(AppColors.pinkPrimary(for: appTheme))
+                        .foregroundColor(AppColors.primary())
                 }
                 .padding(.top, 12)
 
@@ -66,7 +70,7 @@ struct SQLDashboardView: View {
                         VStack(alignment: .leading, spacing: 12) {
                             Text("Most Time-Consuming Activities")
                                 .font(AppFonts.vt323(28))
-                                .foregroundColor(AppColors.black(for: appTheme))
+                                .foregroundColor(AppColors.text(on: AppColors.background()))
 
                             ForEach(mostTimeConsuming, id: \.0.id) { activity, minutes in
                                 WrappedActivityRow(

@@ -5,8 +5,11 @@ struct TimelineSection: View {
     let currentActivity: Activity?
     let onDelete: (Activity) -> Void
     let onEdit: (Activity) -> Void
+    
+    private let bg = AppColors.card()
 
-    @AppStorage("appTheme") private var appTheme: AppTheme = .light
+    @AppStorage("customThemeData") private var customThemeData: Data?
+
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -14,7 +17,7 @@ struct TimelineSection: View {
             // Header
             Text("Add a clip & track your time here")
                 .font(AppFonts.rounded(12))
-                .foregroundColor(AppColors.black(for: appTheme))
+                .foregroundColor(AppColors.text(on: AppColors.background()))
                 .frame(maxWidth: .infinity)
                 .multilineTextAlignment(.center)
 
@@ -50,11 +53,11 @@ struct TimelineSection: View {
             .scrollDisabled(true)
             .frame(maxWidth: .infinity)
             .frame(height: listHeight)
-            .background(AppColors.pinkCard(for: appTheme))
+            .background(AppColors.card())
             .cornerRadius(AppLayout.cornerRadius)
             .overlay(
                 RoundedRectangle(cornerRadius: AppLayout.cornerRadius)
-                    .stroke(AppColors.black(for: appTheme), lineWidth: 1)
+                    .stroke(Color.black, lineWidth: 1)
             )
             .shadow(color: .black.opacity(0.10), radius: 12, x: 0, y: 4)
         }
@@ -77,25 +80,25 @@ struct TimelineSection: View {
 
 // MARK: Empty Timeline Placeholder
 struct EmptyTimelineView: View {
-    @AppStorage("appTheme") private var appTheme: AppTheme = .light
+    @AppStorage("customThemeData") private var customThemeData: Data?
 
+    private let bg = AppColors.card()
     var body: some View {
         VStack(spacing: 8) {
             Text("No timeline entries yet")
                 .font(AppFonts.vt323(20))
-                .foregroundColor(AppColors.black(for: appTheme))
-
+                .foregroundColor(AppColors.text(on: bg))
             Text("Your completed activities will show up here!")
                 .font(AppFonts.vt323(16))
-                .foregroundColor(AppColors.black(for: appTheme))
+                .foregroundColor(AppColors.text(on: bg))
         }
         .padding(20)
         .frame(maxWidth: .infinity)
-        .background(AppColors.pinkCard(for: appTheme))
+        .background(AppColors.card())
         .cornerRadius(AppLayout.cornerRadius)
         .overlay(
             RoundedRectangle(cornerRadius: AppLayout.cornerRadius)
-                .stroke(AppColors.black(for: appTheme), lineWidth: 1)
+                .stroke(Color.black, lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.10), radius: 12, x: 0, y: 4)
     }

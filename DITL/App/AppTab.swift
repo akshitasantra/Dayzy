@@ -7,14 +7,16 @@ enum AppTab {
 }
 
 struct ContentView: View {
-    // MARK: App State
-    @AppStorage("appTheme") private var appTheme: AppTheme = .light
-    @State private var selectedTab: AppTab = .today
+    @AppStorage("customThemeData") private var customThemeData: Data?
 
-    // MARK: UI State
+    @State private var selectedTab: AppTab = .today
     @State private var showingSettings = false
     @State private var showingManualStart = false
     @State private var settingsSourceTab: AppTab?
+
+    // Colors for the theme
+    @State private var cardColor: Color = Color(hex: "#FBE3EB")
+    @State private var primaryColor: Color = Color(hex: "#E88AB8")
 
     // MARK: Activity State
     @State private var currentActivity: Activity?
@@ -27,14 +29,28 @@ struct ContentView: View {
             tabView
             settingsOverlay
         }
-        .preferredColorScheme(appTheme == .dark ? .dark : .light)
+        .preferredColorScheme(nil) // Can't use appTheme anymore; optional
         .onAppear(perform: onAppear)
-        .onChange(of: appTheme, applyTheme)
         .sheet(isPresented: $showingManualStart, content: manualStartSheet)
         .sheet(item: $editingActivity, content: editActivitySheet)
         .sheet(isPresented: $addingActivity, content: addActivitySheet)
     }
+
+    private func loadTheme() {
+        if let data = customThemeData,
+           let theme = try? JSONDecoder().decode(AppThemeData.self, from: data) {
+            cardColor = Color(hex: theme.cardColorHex)
+            primaryColor = Color(hex: theme.primaryColorHex)
+        }
+    }
+    
+    private func onAppear() {
+        loadTheme()
+        TabBarStyler.apply(cardColor: cardColor, primaryColor: primaryColor)
+        reloadToday()
+    }
 }
+
 
 // MARK: Main Views
 private extension ContentView {
@@ -132,15 +148,6 @@ private extension ContentView {
     func openSettings(from tab: AppTab) {
         settingsSourceTab = tab
         showingSettings = true
-    }
-
-    func onAppear() {
-        TabBarStyler.apply(theme: appTheme)
-        reloadToday()
-    }
-
-    func applyTheme(_: AppTheme, _ newTheme: AppTheme) {
-        TabBarStyler.apply(theme: newTheme)
     }
 
     func calculateDuration(start: Date, end: Date) -> Int {

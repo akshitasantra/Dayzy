@@ -1,7 +1,9 @@
 import SwiftUI
 
 struct ManualStartSheet: View {
-    @AppStorage("appTheme") private var appTheme: AppTheme = .light
+@AppStorage("customThemeData") private var customThemeData: Data?
+
+
     @State private var title: String = ""
 
     let onStart: (String) -> Void
@@ -12,16 +14,16 @@ struct ManualStartSheet: View {
             // Header
             Text("Start Activity")
                 .font(AppFonts.vt323(32))
-                .foregroundColor(AppColors.black(for: appTheme))
+                .foregroundColor(Color.black)
 
             // Activity name input
             TextField("Activity name", text: $title)
                 .padding()
-                .background(AppColors.lavenderQuick(for: appTheme))
+                .background(AppColors.lavenderQuick())
                 .cornerRadius(AppLayout.cornerRadius)
                 .overlay(
                     RoundedRectangle(cornerRadius: AppLayout.cornerRadius)
-                        .stroke(AppColors.black(for: appTheme), lineWidth: 1)
+                        .stroke(Color.black, lineWidth: 1)
                 )
 
             // Start button
@@ -35,7 +37,7 @@ struct ManualStartSheet: View {
                     .foregroundColor(.white)
                     .padding(.horizontal, 40)
                     .padding(.vertical, 14)
-                    .background(AppColors.pinkPrimary(for: appTheme))
+                    .background(AppColors.primary())
                     .cornerRadius(AppLayout.cornerRadius)
             }
 

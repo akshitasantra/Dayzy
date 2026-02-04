@@ -1,22 +1,39 @@
 import SwiftUI
 
-enum AppColors {
-    static func pinkCard(for theme: AppTheme) -> Color {
-        theme == .light ? Color(hex: "#FBE3EB") : Color(hex: "#E88AB8")
+struct AppColors {
+
+    static func card() -> Color {
+        getColor(isPrimary: false, defaultHex: "#FBE3EB")
     }
-    static func pinkPrimary(for theme: AppTheme) -> Color {
-        theme == .light ? Color(hex: "#E88AB8") : Color(hex:"#FADBE6")
+
+    static func primary() -> Color {
+        getColor(isPrimary: true, defaultHex: "#E88AB8")
     }
-    static func lavenderQuick(for theme: AppTheme) -> Color {
-        theme == .light ? Color(hex: "#E6D9FF") : Color(hex: "#E6D9FF")
+
+    static func text(on background: Color) -> Color {
+        background.idealTextColor()
     }
-    static func background(for theme: AppTheme) -> Color {
-        theme == .light ? Color(hex: "#FFF9F5") : Color(hex: "#2A2A28")
+
+    static func lavenderQuick() -> Color {
+        Color(hex: "#E6D9FF")
     }
-    static func white(for theme: AppTheme) -> Color {
-        theme == .light ? Color.white : Color.black
+
+    static func background() -> Color {
+        if let data = UserDefaults.standard.data(forKey: AppThemeKey.customTheme),
+           let theme = try? JSONDecoder().decode(AppThemeData.self, from: data) {
+            return theme.useDarkBackground
+                ? Color(hex: "#2A2A28")
+                : Color.white
+        }
+        return Color.white
     }
-    static func black(for theme: AppTheme) -> Color {
-        theme == .light ? Color.black : Color.white
+
+    private static func getColor(isPrimary: Bool, defaultHex: String) -> Color {
+        if let data = UserDefaults.standard.data(forKey: AppThemeKey.customTheme),
+           let theme = try? JSONDecoder().decode(AppThemeData.self, from: data) {
+            return Color(hex: isPrimary ? theme.primaryColorHex : theme.cardColorHex)
+        }
+        return Color(hex: defaultHex)
     }
+    
 }

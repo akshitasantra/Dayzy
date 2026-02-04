@@ -5,10 +5,14 @@ struct CurrentActivityCard: View {
     let activity: Activity
     let onEnd: () -> Void
     
+    private let cardBackground = AppColors.card()
+    private let primaryBackground = AppColors.primary()
+    
     @State private var showingRecorder = false
     @State private var elapsed: TimeInterval = 0
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
-    @AppStorage("appTheme") private var appTheme: AppTheme = .light
+@AppStorage("customThemeData") private var customThemeData: Data?
+
 
     var body: some View {
         ZStack {
@@ -16,20 +20,20 @@ struct CurrentActivityCard: View {
                 // Activity title
                 Text(activity.title)
                     .font(AppFonts.vt323(24))
-                    .foregroundColor(AppColors.pinkPrimary(for: appTheme))
+                    .foregroundColor(AppColors.primary())
                     .multilineTextAlignment(.center)
 
                 // Started at
                 Text("Started at \(formattedTime(activity.startTime))")
                     .font(AppFonts.rounded(24))
-                    .foregroundColor(AppColors.black(for: appTheme))
+                    .foregroundColor(AppColors.text(on: cardBackground))
                     .multilineTextAlignment(.center)
 
                 // Elapsed time + video icon
                 HStack(spacing: 8) {
                     Text("\(elapsedTimeString(elapsed)) elapsed")
                         .font(AppFonts.vt323(18))
-                        .foregroundColor(AppColors.black(for: appTheme))
+                        .foregroundColor(AppColors.text(on: cardBackground))
 
                     Button {
                         showingRecorder = true
@@ -48,25 +52,25 @@ struct CurrentActivityCard: View {
                         .foregroundColor(.white)
                         .padding(.horizontal, 32)
                         .padding(.vertical, 16)
-                        .background(AppColors.pinkPrimary(for: appTheme))
+                        .background(AppColors.primary())
                         .cornerRadius(AppLayout.cornerRadius)
                 }
                 .withClickSound()
                 .overlay(
                     RoundedRectangle(cornerRadius: AppLayout.cornerRadius)
-                        .stroke(AppColors.black(for: appTheme), lineWidth: 1)
+                        .stroke(Color.black, lineWidth: 1)
                 )
-                .shadow(color: AppColors.black(for: appTheme).opacity(0.10), radius: 12, x: 0, y: 4)
+                .shadow(color: Color.black.opacity(0.10), radius: 12, x: 0, y: 4)
             }
             .padding(20)
             .frame(maxWidth: .infinity)
-            .background(AppColors.pinkCard(for: appTheme))
+            .background(AppColors.card())
             .cornerRadius(AppLayout.cornerRadius)
             .overlay(
                 RoundedRectangle(cornerRadius: AppLayout.cornerRadius)
-                    .stroke(AppColors.black(for: appTheme), lineWidth: 1)
+                    .stroke(Color.black, lineWidth: 1)
             )
-            .shadow(color: AppColors.black(for: appTheme).opacity(0.10), radius: 12, x: 0, y: 4)
+            .shadow(color: Color.black.opacity(0.10), radius: 12, x: 0, y: 4)
 
             // Decorative icons anchored to card corners
             .overlay(alignment: .topLeading) {

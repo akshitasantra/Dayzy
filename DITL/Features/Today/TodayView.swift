@@ -6,7 +6,8 @@ struct TodayView: View {
     @Binding var timeline: [Activity]
 
     // MARK: App Theme
-    @AppStorage("appTheme") private var appTheme: AppTheme = .light
+@AppStorage("customThemeData") private var customThemeData: Data?
+
 
     // MARK: Callbacks
     let onSettingsTapped: () -> Void
@@ -23,7 +24,7 @@ struct TodayView: View {
     // MARK: Body
     var body: some View {
         ZStack {
-            AppColors.background(for: appTheme)
+            AppColors.background()
                 .ignoresSafeArea()
 
             ScrollView {
@@ -34,9 +35,10 @@ struct TodayView: View {
                         Spacer()
                         Button(action: onSettingsTapped) {
                             Image(systemName: "gearshape.fill")
-                                .foregroundColor(.black)
+                                .foregroundColor(AppColors.text(on: AppColors.lavenderQuick()))
+
                                 .padding(10)
-                                .background(AppColors.lavenderQuick(for: appTheme))
+                                .background(AppColors.lavenderQuick())
                                 .clipShape(Circle())
                         }
                     }
@@ -53,7 +55,7 @@ struct TodayView: View {
 
                             Text("Today")
                                 .font(AppFonts.vt323(42))
-                                .foregroundColor(AppColors.pinkPrimary(for: appTheme))
+                                .foregroundColor(AppColors.primary())
 
                             Image("star")
                                 .resizable()
@@ -63,7 +65,7 @@ struct TodayView: View {
 
                         Text(formattedDate())
                             .font(AppFonts.rounded(16))
-                            .foregroundColor(AppColors.pinkPrimary(for: appTheme))
+                            .foregroundColor(AppColors.primary())
                     }
 
                     // MARK: Current Activity Card
@@ -94,7 +96,7 @@ struct TodayView: View {
                     VStack(spacing: 12) {
                         Text("Today’s Timeline")
                             .font(AppFonts.vt323(40))
-                            .foregroundColor(AppColors.black(for: appTheme))
+                            .foregroundColor(AppColors.text(on: AppColors.background()))
                             .frame(maxWidth: .infinity)
                             .multilineTextAlignment(.center)
 
@@ -122,9 +124,10 @@ struct TodayView: View {
                     // MARK: Add Timeline Entry Button
                     Button(action: onAddTimelineEntry) {
                         Image(systemName: "plus")
-                            .foregroundColor(.black)
+                            .foregroundColor(AppColors.text(on: AppColors.lavenderQuick()))
+
                             .padding(8)
-                            .background(AppColors.lavenderQuick(for: appTheme))
+                            .background(AppColors.lavenderQuick())
                             .clipShape(Circle())
                     }
                     .padding(.bottom, 40)
