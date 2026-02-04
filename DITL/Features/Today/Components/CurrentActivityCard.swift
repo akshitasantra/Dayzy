@@ -4,7 +4,8 @@ import Combine
 struct CurrentActivityCard: View {
     let activity: Activity
     let onEnd: () -> Void
-
+    
+    @State private var showingRecorder = false
     @State private var elapsed: TimeInterval = 0
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     @AppStorage("appTheme") private var appTheme: AppTheme = .light
@@ -30,9 +31,9 @@ struct CurrentActivityCard: View {
                         .font(AppFonts.vt323(18))
                         .foregroundColor(AppColors.black(for: appTheme))
 
-                    Button(action: {
-                        // TODO: record clip
-                    }) {
+                    Button {
+                        showingRecorder = true
+                    } label: {
                         Image("video")
                             .resizable()
                             .frame(width: 20, height: 20)
@@ -99,6 +100,18 @@ struct CurrentActivityCard: View {
         .onReceive(timer) { _ in
             elapsed = Date().timeIntervalSince(activity.startTime)
         }
+        .sheet(isPresented: $showingRecorder) {
+            VideoRecorderView(
+                onSaved: { assetId in
+                    DatabaseManager.shared.addVideoClip(
+                        activityId: activity.id,
+                        assetId: assetId
+                    )
+                },
+                onCancel: {}
+            )
+        }
+
     }
 
     // MARK: Helpers

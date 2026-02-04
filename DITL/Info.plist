@@ -2,12 +2,14 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSCameraUsageDescription</key>
+	<string>Record short video clips for your daily timeline.</string>
+	<key>CFBundleIdentifier</key>
+	<string></string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>VT323-Regular.ttf</string>
 	</array>
-	<key>NSCameraUsageDescription</key>
-	<string>Record short clips for your day-in-the-life video.</string>
 	<key>UIBackgroundModes</key>
 	<array/>
 	<key>NSMicrophoneUsageDescription</key>

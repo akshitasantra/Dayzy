@@ -60,12 +60,6 @@ private extension ContentView {
             )
             .tabItem { Label("Stats", systemImage: "chart.bar") }
             .tag(AppTab.stats)
-
-            VideoView(
-                onSettingsTapped: { openSettings(from: .video) }
-            )
-            .tabItem { Label("Video", systemImage: "video.fill") }
-            .tag(AppTab.video)
         }
     }
 

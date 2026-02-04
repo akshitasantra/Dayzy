@@ -32,6 +32,18 @@ class DatabaseManager {
         );
         """
         execute(sql: createTableString)
+        
+        let createClipsTable = """
+        CREATE TABLE IF NOT EXISTS video_clips (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            activity_id INTEGER NOT NULL,
+            asset_id TEXT NOT NULL,
+            created_at REAL NOT NULL,
+            clip_order INTEGER,
+            FOREIGN KEY(activity_id) REFERENCES activities(id)
+        );
+        """
+        execute(sql: createClipsTable)
     }
 
     // MARK: Raw SQL Execution Helpers
@@ -197,6 +209,52 @@ class DatabaseManager {
         let sql = "DELETE FROM activities WHERE id = \(id);"
         execute(sql: sql)
     }
+    
+    // MARK: Video Clips CRUD
+    func addVideoClip(activityId: Int, assetId: String) {
+        let timestamp = Date().timeIntervalSince1970
+
+        let orderSql = """
+        SELECT COUNT(*) as count
+        FROM video_clips
+        WHERE activity_id = \(activityId);
+        """
+        let orderRows = query(sql: orderSql)
+        let order = (orderRows.first?["count"] as? Int ?? 0) + 1
+
+        let sql = """
+        INSERT INTO video_clips (activity_id, asset_id, created_at, clip_order)
+        VALUES (\(activityId), '\(assetId)', \(timestamp), \(order));
+        """
+        execute(sql: sql)
+    }
+
+    func fetchClips(for activityId: Int) -> [VideoClip] {
+        let sql = """
+        SELECT * FROM video_clips
+        WHERE activity_id = \(activityId)
+        ORDER BY clip_order ASC;
+        """
+        let rows = query(sql: sql)
+
+        return rows.compactMap { row in
+            guard
+                let id = row["id"] as? Int,
+                let assetId = row["asset_id"] as? String,
+                let createdAt = row["created_at"] as? Double,
+                let order = row["clip_order"] as? Int
+            else { return nil }
+
+            return VideoClip(
+                id: id,
+                activityId: activityId,
+                assetId: assetId,
+                createdAt: Date(timeIntervalSince1970: createdAt),
+                order: order
+            )
+        }
+    }
+
 
     // MARK: Example Queries
 
