@@ -7,16 +7,12 @@ enum AppTab {
 }
 
 struct ContentView: View {
-    @AppStorage("customThemeData") private var customThemeData: Data?
+    @ObservedObject private var themeManager = ThemeManager.shared
 
     @State private var selectedTab: AppTab = .today
     @State private var showingSettings = false
     @State private var showingManualStart = false
     @State private var settingsSourceTab: AppTab?
-
-    // Colors for the theme
-    @State private var cardColor: Color = Color(hex: "#FBE3EB")
-    @State private var primaryColor: Color = Color(hex: "#E88AB8")
 
     // MARK: Activity State
     @State private var currentActivity: Activity?
@@ -28,29 +24,24 @@ struct ContentView: View {
         ZStack {
             tabView
             settingsOverlay
+
+            // Dynamic tab bar colors
+            DynamicTabBarStyler(themeManager: themeManager)
+                .frame(width: 0, height: 0) // invisible
         }
-        .preferredColorScheme(nil) // Can't use appTheme anymore; optional
-        .onAppear(perform: onAppear)
+        .preferredColorScheme(themeManager.theme.useDarkBackground ? .dark : .light)
+        .onAppear {
+            reloadToday()
+        }
         .sheet(isPresented: $showingManualStart, content: manualStartSheet)
         .sheet(item: $editingActivity, content: editActivitySheet)
         .sheet(isPresented: $addingActivity, content: addActivitySheet)
     }
 
-    private func loadTheme() {
-        if let data = customThemeData,
-           let theme = try? JSONDecoder().decode(AppThemeData.self, from: data) {
-            cardColor = Color(hex: theme.cardColorHex)
-            primaryColor = Color(hex: theme.primaryColorHex)
-        }
-    }
-    
-    private func onAppear() {
-        loadTheme()
-        TabBarStyler.apply(cardColor: cardColor, primaryColor: primaryColor)
-        reloadToday()
-    }
+    // Convenience properties to access colors
+    private var cardColor: Color { Color(hex: themeManager.theme.cardColorHex) }
+    private var primaryColor: Color { Color(hex: themeManager.theme.primaryColorHex) }
 }
-
 
 // MARK: Main Views
 private extension ContentView {

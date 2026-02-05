@@ -2,7 +2,6 @@ import SwiftUI
 import UIKit
 
 extension Color {
-
     // MARK: - Init from Hex
     init(hex: String) {
         var hexString = hex.trimmingCharacters(in: .whitespacesAndNewlines)

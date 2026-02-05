@@ -120,15 +120,32 @@ struct PreferencesCard: View {
 // MARK: Preference Button
 struct PreferenceButton: View {
     let title: String
-    let iconName: String
+    let iconName: String // black version by default
     var backgroundColor: Color
     var borderColor: Color
     var action: () -> Void
 
+    private var isDarkBackground: Bool {
+        AppColors.text(on: backgroundColor) == .white
+    }
+
+    private var resolvedIconName: String {
+        // map your black icons to white icons
+        switch iconName {
+        case "high-volume": return isDarkBackground ? "high-volume-white" : "high-volume"
+        case "mute": return isDarkBackground ? "mute-white" : "mute"
+        case "notification": return isDarkBackground ? "notification-white" : "notification"
+        case "mute-notification": return isDarkBackground ? "mute-notification-white" : "mute-notification"
+        case "paintbrush": return isDarkBackground ? "paintbrush-white" : "paintbrush"
+        case "video": return isDarkBackground ? "video-white" : "video"
+        default: return iconName
+        }
+    }
+
     var body: some View {
         Button(action: action) {
             HStack(spacing: 12) {
-                Image(iconName)
+                Image(resolvedIconName)
                     .resizable()
                     .frame(width: 24, height: 24)
                     .padding(.leading, 16)
@@ -153,6 +170,7 @@ struct PreferenceButton: View {
         .shadow(color: borderColor.opacity(0.1), radius: 12, x: 0, y: 4)
     }
 }
+
 
 // MARK: Button Click Sound
 extension Button {

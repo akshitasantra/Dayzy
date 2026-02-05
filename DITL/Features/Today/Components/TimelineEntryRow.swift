@@ -32,9 +32,9 @@ struct TimelineEntryRow: View {
             Button(action: {
                 // TODO: record clip
             }) {
-                Image("video")
-                    .resizable()
-                    .frame(width: 20, height: 20)
+                Image(AppColors.text(on: bg) == .white ? "video-white" : "video")
+                        .resizable()
+                        .frame(width: 20, height: 20)
             }
         }
     }

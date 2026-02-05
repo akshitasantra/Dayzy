@@ -38,7 +38,7 @@ struct CurrentActivityCard: View {
                     Button {
                         showingRecorder = true
                     } label: {
-                        Image("video")
+                        Image(AppColors.text(on: cardBackground) == .white ? "video-white" : "video")
                             .resizable()
                             .frame(width: 20, height: 20)
                     }
