@@ -7,6 +7,7 @@ enum AppSound {
 struct PreferencesCard: View {
     @State private var showingThemePicker = false
     @ObservedObject private var themeManager = ThemeManager.shared
+    @ObservedObject private var notificationManager = NotificationManager.shared
 
     @AppStorage(AppSound.enabledKey) private var soundEnabled = true
 
@@ -33,6 +34,17 @@ struct PreferencesCard: View {
                 ) {
                     soundEnabled.toggle()
                 }
+                
+                PreferenceButton(
+                    title: "Notifications",
+                    iconName: notificationManager.isAuthorized ? "notification" : "mute-notification",
+                    backgroundColor: cardColor,
+                    borderColor: primaryColor
+                ) {
+                    notificationManager.toggleNotifications()
+                }
+
+
             }
             .padding(20)
             .frame(maxWidth: .infinity)
