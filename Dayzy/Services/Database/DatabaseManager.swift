@@ -362,6 +362,97 @@ extension DatabaseManager {
         let duration = Int(end.timeIntervalSince(activity.startTime) / 60)
         updateActivity(id: activity.id, newEnd: end, newDuration: duration)
     }
+    
+    func stats(for scope: WrappedScope, offset: Int) -> (total: Int, activities: [(Activity, Int)], title: String) {
+            let calendar = Calendar.current
+            let now = Date()
+
+            let interval: DateInterval
+            let title: String
+
+            switch scope {
+            case .week:
+                let start = calendar.date(byAdding: .weekOfYear, value: offset, to: calendar.startOfDay(for: now))!
+                interval = calendar.dateInterval(of: .weekOfYear, for: start)!
+                title = "Week of \(formatted(interval.start))"
+
+            case .month:
+                let start = calendar.date(byAdding: .month, value: offset, to: now)!
+                interval = calendar.dateInterval(of: .month, for: start)!
+                title = monthFormatter.string(from: interval.start)
+
+            case .year:
+                let start = calendar.date(byAdding: .year, value: offset, to: now)!
+                interval = calendar.dateInterval(of: .year, for: start)!
+                title = yearFormatter.string(from: interval.start)
+            }
+
+            let activities = fetchActivities(from: interval.start, to: interval.end)
+            let total = activities.reduce(0) { $0 + ($1.durationMinutes ?? 0) }
+
+            var totals: [String: Int] = [:]
+            var first: [String: Activity] = [:]
+
+            for a in activities {
+                totals[a.title, default: 0] += a.durationMinutes ?? 0
+                if first[a.title] == nil { first[a.title] = a }
+            }
+
+            let ranked: [(Activity, Int)] = totals.sorted { $0.value > $1.value }
+                .compactMap { (title, total) -> (Activity, Int)? in
+                    guard let activity = first[title] else { return nil }
+                    return (activity, total)
+                }
+
+
+            return (total, ranked, title)
+        }
+
+        private func fetchActivities(from start: Date, to end: Date) -> [Activity] {
+            let sql = """
+            SELECT id, title, start_time, end_time
+            FROM activities
+            WHERE start_time < \(end.timeIntervalSince1970)
+              AND (end_time IS NULL OR end_time > \(start.timeIntervalSince1970));
+            """
+
+            return query(sql: sql).compactMap { row in
+                guard
+                    let id = row["id"] as? Int,
+                    let title = row["title"] as? String,
+                    let startRaw = row["start_time"] as? Double
+                else { return nil }
+
+                let s = max(Date(timeIntervalSince1970: startRaw), start)
+                let e = min(
+                    (row["end_time"] as? Double).map(Date.init(timeIntervalSince1970:)) ?? Date(),
+                    end
+                )
+
+                let duration = Int(e.timeIntervalSince(s) / 60)
+                guard duration > 0 else { return nil }
+
+                return Activity(id: id, title: title, startTime: s, endTime: e, durationMinutes: duration)
+            }
+        }
+
+        private func formatted(_ date: Date) -> String {
+            let f = DateFormatter()
+            f.dateStyle = .medium
+            return f.string(from: date)
+        }
+
+        private var monthFormatter: DateFormatter {
+            let f = DateFormatter()
+            f.dateFormat = "LLLL yyyy"
+            return f
+        }
+
+        private var yearFormatter: DateFormatter {
+            let f = DateFormatter()
+            f.dateFormat = "yyyy"
+            return f
+        }
 }
 
 

@@ -1,32 +1,31 @@
 import SwiftUI
 
 struct SQLDashboardView: View {
-    @State private var totalToday: Int = 0
-    @State private var mostTimeConsuming: [(Activity, Int)] = []
+    @State private var scope: WrappedScope = .week
+    @State private var offset: Int = 0
+    @State private var biggestDay: (date: Date, minutes: Int)? = nil
+    @State private var totalMinutes: Int = 0
+    @State private var previousMinutes: Int? = nil  // ← Add this
+    @State private var activities: [(Activity, Int)] = []
+    @State private var headerTitle: String = ""
+    @State private var chartLabels: [String] = []
+    @State private var currentPeriodTotals: [Int] = []
+    @State private var previousPeriodTotals: [Int] = []
 
-@AppStorage("customThemeData") private var customThemeData: Data?
-
-
-    
     let onSettingsTapped: () -> Void
 
     var body: some View {
         ZStack {
-            AppColors.background()
-                .ignoresSafeArea()
+            AppColors.background().ignoresSafeArea()
 
-            VStack(spacing: 0) {
-                // Top bar with settings button
+            VStack(spacing: 20) {
+
+                // Settings
                 HStack {
                     Spacer()
-                    
-                    Button {
-                        onSettingsTapped()
-                    } label: {
+                    Button(action: onSettingsTapped) {
                         Image(systemName: "gearshape.fill")
-                            .foregroundColor(Color.black)
-
-
+                            .foregroundColor(AppColors.text(on: AppColors.lavenderQuick()))
                             .padding(10)
                             .background(AppColors.lavenderQuick())
                             .clipShape(Circle())
@@ -35,74 +34,204 @@ struct SQLDashboardView: View {
                 .padding(.top, 24)
                 .padding(.horizontal, AppLayout.screenPadding)
 
-                // Header section
-                VStack(spacing: 4) {
-                    HStack(spacing: 8) {
-                        Image("star")
-                            .resizable()
-                            .rotationEffect(.degrees(45))
-                            .frame(width: 24, height: 24)
 
-                        Text("Dayzy Wrapped")
-                            .font(AppFonts.vt323(42))
-                            .foregroundColor(AppColors.primary())
+                // Wrapped title
+                Text("Dayzy Wrapped")
+                    .font(AppFonts.vt323(42))
+                    .foregroundColor(AppColors.primary())
 
-                        Image("star")
-                            .resizable()
-                            .rotationEffect(.degrees(45))
-                            .frame(width: 24, height: 24)
+                // Scope tabs
+                Picker("", selection: $scope) {
+                    ForEach(WrappedScope.allCases) {
+                        Text($0.rawValue).tag($0)
                     }
-
-                    Text("Your day, summarized")
-                        .font(AppFonts.rounded(16))
-                        .foregroundColor(AppColors.primary())
                 }
-                .padding(.top, 12)
+                .pickerStyle(.segmented)
+                .padding(.horizontal)
+                .onChange(of: scope) { _ in
+                    offset = 0
+                    load()
+                }
 
-                // Scrollable content
+                // Period header
+                var isCurrentPeriod: Bool {
+                    offset == 0
+                }
+
+                WrappedPeriodHeader(
+                    title: headerTitle,
+                    onPrevious: { offset -= 1; load() },
+                    onNext: { offset += 1; load() },
+                    disableNext: isCurrentPeriod
+                )
+
+
                 ScrollView {
                     VStack(spacing: 24) {
 
-                        // Total Time Card
-                        WrappedTotalTimeCard(totalMinutes: totalToday)
+                        WrappedTotalTimeCard(totalMinutes: totalMinutes, previousMinutes: previousMinutes, scope: scope)
 
-                        // Most Time-Consuming Activities
+                        PeriodBarChart(
+                            current: currentPeriodTotals,
+                            previous: previousPeriodTotals,
+                            labels: chartLabels,
+                            scope: scope
+                        )
+                        
+                        PeriodTrendsCard(
+                            totalMinutes: totalMinutes,
+                            previousMinutes: previousMinutes ?? 0,
+                            scope: scope
+                        )
+                        
+                        if scope == .year, let biggest = biggestDay {
+                            BiggestDayCard(date: biggest.date, minutes: biggest.minutes)
+                                .padding(.vertical, 8)
+                        }
+
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("Most Time-Consuming Activities")
+                            Text("Top Activities")
                                 .font(AppFonts.vt323(28))
-                                .foregroundColor(AppColors.text(on: AppColors.background()))
 
-                            ForEach(mostTimeConsuming, id: \.0.id) { activity, minutes in
-                                WrappedActivityRow(
-                                    activity: activity,
-                                    minutes: minutes
-                                )
+                            ForEach(activities.prefix(5), id: \.0.id) {
+                                WrappedActivityRow(activity: $0.0, minutes: $0.1)
                             }
                         }
                     }
-                    .padding(.top, 32)
-                    .padding(.horizontal, AppLayout.screenPadding)
+                    .padding()
                 }
-
-                Spacer()
             }
         }
-        .onAppear {
-            loadSQLData()
+        .onAppear(perform: load)
+    }
+
+    private func load() {
+        let stats = DatabaseManager.shared.stats(for: scope, offset: offset)
+        totalMinutes = stats.total
+        activities = stats.activities
+        headerTitle = stats.title
+
+        // Calculate previous period
+        let previousStats = DatabaseManager.shared.stats(for: scope, offset: offset - 1)
+        previousMinutes = previousStats.total
+
+        // Compute biggest day if year view
+        if scope == .year {
+            computeBiggestDay(from: stats.activities)
+        } else {
+            biggestDay = nil
         }
-        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
-            loadSQLData()
+        
+        loadChartData()
+    }
+
+    private func computeBiggestDay(from activities: [(Activity, Int)]) {
+        var dayTotals: [Date: Int] = [:]
+        let calendar = Calendar.current
+
+        for (activity, minutes) in activities {
+            let day = calendar.startOfDay(for: activity.startTime)
+            dayTotals[day, default: 0] += minutes
+        }
+
+        if let (date, minutes) = dayTotals.max(by: { $0.value < $1.value }) {
+            biggestDay = (date, minutes)
         }
     }
 
-    // MARK: Helpers
-    private func loadSQLData() {
-        let total = DatabaseManager.shared.totalTimeToday()
-        let activities = DatabaseManager.shared.mostTimeConsumingActivitiesToday()
 
-        DispatchQueue.main.async {
-            self.totalToday = total
-            self.mostTimeConsuming = Array(activities.prefix(5))
+    private func loadChartData() {
+        // Clear previous data
+        chartLabels = []
+        currentPeriodTotals = []
+        previousPeriodTotals = []
+
+        let calendar = Calendar.current
+
+        switch scope {
+        case .week:
+            // Determine start of the current week based on offset
+            guard let startOfWeek = calendar.date(byAdding: .weekOfYear, value: -offset, to: calendar.startOfDay(for: Date())) else { return }
+            let weekStart = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: startOfWeek))!
+
+            // Previous week start
+            let prevWeekStart = calendar.date(byAdding: .weekOfYear, value: -1, to: weekStart)!
+
+            chartLabels = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]
+            currentPeriodTotals = Array(repeating: 0, count: 7)
+            previousPeriodTotals = Array(repeating: 0, count: 7)
+
+            let statsCurrent = DatabaseManager.shared.stats(for: .week, offset: offset)
+            let statsPrev = DatabaseManager.shared.stats(for: .week, offset: offset - 1)
+
+            for (activity, minutes) in statsCurrent.activities {
+                let dayIndex = calendar.component(.weekday, from: activity.startTime) - 2
+                let index = (dayIndex < 0 ? 6 : dayIndex) // Sun -> 6
+                currentPeriodTotals[index] += minutes
+            }
+
+            for (activity, minutes) in statsPrev.activities {
+                let dayIndex = calendar.component(.weekday, from: activity.startTime) - 2
+                let index = (dayIndex < 0 ? 6 : dayIndex)
+                previousPeriodTotals[index] += minutes
+            }
+
+        case .month:
+            // Current month start
+            guard let monthStart = calendar.date(byAdding: .month, value: -offset, to: calendar.startOfDay(for: Date())) else { return }
+            
+            // Get number of weeks in month
+            let monthRange = calendar.range(of: .day, in: .month, for: monthStart)!
+            let numDays = monthRange.count
+            
+            // Map each day to week index
+            var weekIndices: [Int] = []
+            for day in 1...numDays {
+                if let date = calendar.date(bySetting: .day, value: day, of: monthStart) {
+                    let weekOfMonth = calendar.component(.weekOfMonth, from: date) - 1 // 0-based
+                    weekIndices.append(weekOfMonth)
+                }
+            }
+            
+            let numWeeks = weekIndices.max() ?? 3 // number of weeks in month
+            currentPeriodTotals = Array(repeating: 0, count: numWeeks + 1)
+            previousPeriodTotals = Array(repeating: 0, count: numWeeks + 1)
+            chartLabels = (0...numWeeks).map { "Week \($0 + 1)" }
+
+            let statsCurrent = DatabaseManager.shared.stats(for: .month, offset: offset)
+            let statsPrev = DatabaseManager.shared.stats(for: .month, offset: offset - 1)
+
+            for (activity, minutes) in statsCurrent.activities {
+                let weekIndex = calendar.component(.weekOfMonth, from: activity.startTime) - 1
+                currentPeriodTotals[weekIndex] += minutes
+            }
+
+            for (activity, minutes) in statsPrev.activities {
+                let weekIndex = calendar.component(.weekOfMonth, from: activity.startTime) - 1
+                previousPeriodTotals[weekIndex] += minutes
+            }
+
+
+        case .year:
+            // Current year
+            guard let yearStart = calendar.date(byAdding: .year, value: -offset, to: calendar.startOfDay(for: Date())) else { return }
+
+            chartLabels = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+            currentPeriodTotals = Array(repeating: 0, count: 12)
+            previousPeriodTotals = Array(repeating: 0, count: 12)
+
+            let statsCurrent = DatabaseManager.shared.stats(for: .year, offset: offset)
+            let statsPrev = DatabaseManager.shared.stats(for: .year, offset: offset - 1)
+
+            for (activity, minutes) in statsCurrent.activities {
+                let month = calendar.component(.month, from: activity.startTime)
+                currentPeriodTotals[month - 1] += minutes
+            }
+
+            for (activity, minutes) in statsPrev.activities {
+                let month = calendar.component(.month, from: activity.startTime)
+                previousPeriodTotals[month - 1] += minutes
+            }
         }
     }
 }

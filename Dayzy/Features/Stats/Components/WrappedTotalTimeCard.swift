@@ -4,14 +4,15 @@ struct WrappedTotalTimeCard: View {
     @AppStorage("customThemeData") private var customThemeData: Data?
 
     private let cardBackground = AppColors.card()
-    private let primaryBackground = AppColors.primary()
     
     let totalMinutes: Int
+    let previousMinutes: Int?       // total for previous period
+    let scope: WrappedScope         // <-- pass the current scope
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 8) {
             // Title
-            Text("Total Time Today")
+            Text("Total Time")
                 .font(AppFonts.rounded(24))
                 .foregroundColor(AppColors.text(on: cardBackground))
 
@@ -19,6 +20,23 @@ struct WrappedTotalTimeCard: View {
             Text("\(totalMinutes) minutes")
                 .font(AppFonts.vt323(36))
                 .foregroundColor(AppColors.primary())
+
+            // Comparison vs previous period
+            if let previous = previousMinutes {
+                HStack(spacing: 4) {
+                    let diff = totalMinutes - previous
+                    let percent = previous > 0 ? Double(diff) / Double(previous) * 100 : 0
+                    let arrow = diff >= 0 ? "arrow.up" : "arrow.down"
+
+                    Image(systemName: arrow)
+                        .font(.caption2)
+                        .foregroundColor(AppColors.text(on: cardBackground))
+
+                    Text(String(format: "vs. %d (last %@) %.0f%%", previous, scopeName(), abs(percent)))
+                        .font(AppFonts.rounded(14))
+                        .foregroundColor(AppColors.text(on: cardBackground))
+                }
+            }
         }
         .padding(20)
         .frame(maxWidth: .infinity)
@@ -30,7 +48,7 @@ struct WrappedTotalTimeCard: View {
                 .stroke(Color.black, lineWidth: 1)
         )
         .shadow(color: Color.black.opacity(0.10), radius: 12, x: 0, y: 4)
-        
+
         // Decorative corner images
         .overlay(alignment: .topLeading) {
             Image("love")
@@ -55,6 +73,14 @@ struct WrappedTotalTimeCard: View {
                 .resizable()
                 .frame(width: 32, height: 32)
                 .padding(12)
+        }
+    }
+
+    private func scopeName() -> String {
+        switch scope {
+        case .week: return "week"
+        case .month: return "month"
+        case .year: return "year"
         }
     }
 }
