@@ -23,10 +23,11 @@ struct PeriodTrendsCard: View {
                         .foregroundColor(AppColors.text(on: cardBackground))
 
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Total: \(totalMinutes) min")
+                        Text("Total: \(formatMinutes(totalMinutes))")
                             .font(AppFonts.rounded(18))
                             .foregroundColor(AppColors.text(on: cardBackground))
-                        Text("Average per \(averageUnit()): \(averageMinutes()) min")
+
+                        Text("Average per \(averageUnit()): \(formatMinutes(averageMinutes()))")
                             .font(AppFonts.rounded(16))
                             .foregroundColor(AppColors.text(on: cardBackground))
                         Text(String(format: "Change: %.0f%%", abs(percent)))

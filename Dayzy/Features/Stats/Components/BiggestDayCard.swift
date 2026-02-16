@@ -15,7 +15,7 @@ struct BiggestDayCard: View {
                 .font(AppFonts.rounded(16))
                 .foregroundColor(AppColors.text(on: AppColors.card()))
 
-            Text("\(minutes) min")
+            Text(formatMinutes(minutes))
                 .font(AppFonts.vt323(24))
                 .foregroundColor(AppColors.lavenderQuick())
         }

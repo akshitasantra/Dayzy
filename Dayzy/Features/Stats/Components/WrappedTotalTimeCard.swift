@@ -17,7 +17,7 @@ struct WrappedTotalTimeCard: View {
                 .foregroundColor(AppColors.text(on: cardBackground))
 
             // Total minutes
-            Text("\(totalMinutes) minutes")
+            Text(formatMinutes(totalMinutes))
                 .font(AppFonts.vt323(36))
                 .foregroundColor(AppColors.primary())
 
@@ -32,7 +32,7 @@ struct WrappedTotalTimeCard: View {
                         .font(.caption2)
                         .foregroundColor(AppColors.text(on: cardBackground))
 
-                    Text(String(format: "vs. %d (last %@) %.0f%%", previous, scopeName(), abs(percent)))
+                    Text(String(format: "vs. %@ (last %@) %.0f%%", formatMinutes(previous), scopeName(), abs(percent)))
                         .font(AppFonts.rounded(14))
                         .foregroundColor(AppColors.text(on: cardBackground))
                 }

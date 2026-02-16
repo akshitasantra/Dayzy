@@ -17,7 +17,7 @@ struct WrappedActivityRow: View {
             Spacer()
 
             // Duration
-            Text("\(minutes) min")
+            Text(formatMinutes(minutes))
                 .font(AppFonts.vt323(22))
                 .foregroundColor(Color.black)
 
