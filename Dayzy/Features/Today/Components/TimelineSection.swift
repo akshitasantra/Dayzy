@@ -25,8 +25,9 @@ struct TimelineSection: View {
                 // Active activity
                 if let active = currentActivity {
                     TimelineEntryRow(
-                        timeRange: formattedTimeRange(start: active.startTime, end: Date()),
-                        activity: active.title,
+                        activityId: active.id,
+                        timeRange: formattedTimeRange(start: active.startTime, end: active.endTime),
+                        activity: active.title
                     )
                     .onTapGesture(count: 2) { onEdit(active) } // allow editing
                     .listRowSeparator(.hidden)
@@ -36,6 +37,7 @@ struct TimelineSection: View {
                 // Completed activities
                 ForEach(timeline.reversed()) { activity in
                     TimelineEntryRow(
+                        activityId: activity.id,
                         timeRange: formattedTimeRange(start: activity.startTime, end: activity.endTime),
                         activity: activity.title
                     )
