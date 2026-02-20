@@ -8,9 +8,12 @@ struct CurrentActivityCard: View {
     private let cardBackground = AppColors.card()
     private let primaryBackground = AppColors.primary()
 
-    @State private var videoSheet: VideoActionSheet?
-    @State private var showVideoDialog = false
+    @State private var showRecorder = false
+    @State private var showPicker = false
+    @State private var editingAssetId: String? = nil
     @State private var elapsed: TimeInterval = 0
+    @State private var editingAsset: Asset? = nil
+
 
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -33,7 +36,7 @@ struct CurrentActivityCard: View {
                         .foregroundColor(AppColors.text(on: cardBackground))
 
                     Button {
-                        showVideoDialog = true
+                        showVideoDialog()
                     } label: {
                         Image(AppColors.text(on: cardBackground) == .white ? "video-white" : "video")
                             .resizable()
@@ -66,7 +69,7 @@ struct CurrentActivityCard: View {
                     .stroke(Color.black, lineWidth: 1)
             )
             .shadow(color: Color.black.opacity(0.10), radius: 12, x: 0, y: 4)
-            // Decorative icons anchored to card corners
+            // Decorative icons
             .overlay(alignment: .topLeading) {
                 Image("love")
                     .resizable()
@@ -92,51 +95,55 @@ struct CurrentActivityCard: View {
                     .padding(12)
             }
         }
+        // 🎥 Recorder
+        .fullScreenCover(isPresented: $showRecorder) {
+            VideoRecorderView(
+                onSaved: { assetId in
+                    showRecorder = false
+                    editingAsset = Asset(id: assetId)
+                },
+                onCancel: {
+                    showRecorder = false
+                }
+            )
+        }
+
+        // 📁 Picker
+        .sheet(isPresented: $showPicker) {
+            VideoPickerView(
+                onPicked: { assetId in
+                    showPicker = false
+                    editingAsset = Asset(id: assetId)
+                },
+                onCancel: {
+                    showPicker = false
+                }
+            )
+        }
+        // ✂️ Clip Editor
+        .sheet(item: $editingAsset) { asset in
+            ClipEditorView(
+                assetId: asset.id,
+                activityName: activity.title,
+                activityStart: activity.startTime,
+                onSaved: { newAssetId, metadata in
+                    editingAsset = nil
+                    // TODO: save metadata
+                },
+                onCancel: {
+                    editingAsset = nil
+                }
+            )
+        }
         .onAppear {
             elapsed = Date().timeIntervalSince(activity.startTime)
         }
         .onReceive(timer) { _ in
             elapsed = Date().timeIntervalSince(activity.startTime)
         }
-
-        .confirmationDialog(
-            "Add Video",
-            isPresented: $showVideoDialog
-        ) {
-            Button("Record Video") { videoSheet = .record }
-            Button("Upload from Photos") { videoSheet = .upload }
-            Button("Cancel", role: .cancel) {}
-        }
-
-        .sheet(item: $videoSheet) { sheet in
-            switch sheet {
-            case .record:
-                VideoRecorderView(
-                    onSaved: { assetId in
-                        DatabaseManager.shared.addVideoClip(
-                            activityId: activity.id,
-                            assetId: assetId
-                        )
-                        videoSheet = nil
-                    },
-                    onCancel: { videoSheet = nil }
-                )
-
-            case .upload:
-                VideoPickerView(
-                    onPicked: { assetId in
-                        DatabaseManager.shared.addVideoClip(
-                            activityId: activity.id,
-                            assetId: assetId
-                        )
-                        videoSheet = nil
-                    },
-                    onCancel: { videoSheet = nil }
-                )
-            }
-        }
     }
 
+    // MARK: Helpers
     private func formattedTime(_ date: Date) -> String {
         let f = DateFormatter()
         f.timeStyle = .short
@@ -148,5 +155,19 @@ struct CurrentActivityCard: View {
         let s = Int(time) % 60
         return String(format: "%02d:%02d", m, s)
     }
-}
 
+    private func showVideoDialog() {
+        let alert = UIAlertController(title: "Add Video", message: nil, preferredStyle: .actionSheet)
+        alert.addAction(UIAlertAction(title: "Record Video", style: .default) { _ in
+            showRecorder = true
+        })
+        alert.addAction(UIAlertAction(title: "Upload from Photos", style: .default) { _ in
+            showPicker = true
+        })
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let root = windowScene.windows.first?.rootViewController {
+            root.present(alert, animated: true)
+        }
+    }
+}

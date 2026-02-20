@@ -1,9 +1,9 @@
 import Foundation
 
-struct VideoClip: Identifiable {
-    let id: Int
-    let activityId: Int
-    let assetId: String   // Photos localIdentifier
-    let createdAt: Date
-    let order: Int
+struct VideoClip {
+    var id: Int
+    var activityId: Int
+    var assetId: String
+    var createdAt: Date
+    var order: Int
 }
