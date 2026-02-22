@@ -39,3 +39,11 @@ Available on the **App Store**:
 
 ## Screen Recording
 https://github.com/user-attachments/assets/a5a4584f-76f2-4ea9-9cc2-1a99850f20ce
+
+## Support
+
+If you have questions, run into issues, or want to suggest a feature, you can reach out here:
+
+- **Email:** [akshitasantra@gmail.com](mailto:akshitasantra@gmail.com)  
+
+We aim to respond as quickly as possible and appreciate any feedback to help improve Dayzy!  
