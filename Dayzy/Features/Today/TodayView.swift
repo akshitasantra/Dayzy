@@ -12,6 +12,8 @@ struct TodayView: View {
 
     @State private var showDayPreview = false
     @State private var previewClips: [ClipMetadata] = []
+    @State private var selectedDate: Date = Date()
+
 
     // MARK: Callbacks
     let onSettingsTapped: () -> Void
@@ -24,6 +26,11 @@ struct TodayView: View {
 
     // MARK: Defaults
     private let defaultQuickStarts = ["Homework", "Scroll", "Code", "Eat"]
+    
+    private var isToday: Bool {
+        Calendar.current.isDateInToday(selectedDate)
+    }
+
 
     // MARK: Body
     var body: some View {
@@ -50,40 +57,79 @@ struct TodayView: View {
                     .padding(.horizontal, AppLayout.screenPadding)
 
                     // MARK: Header
-                    VStack(spacing: 4) {
-                        HStack(spacing: 8) {
-                            Image("star")
-                                .resizable()
-                                .rotationEffect(.degrees(45))
-                                .frame(width: 24, height: 24)
+                    VStack(spacing: 6) {
+                        HStack {
+                            Button {
+                                selectedDate = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate)!
+                                reloadForSelectedDate()
+                            } label: {
+                                Image(systemName: "chevron.left")
+                                    .font(.title2)
+                                    .foregroundColor(AppColors.primary())
+                            }
 
-                            Text("Today")
-                                .font(AppFonts.vt323(42))
-                                .foregroundColor(AppColors.primary())
+                            Spacer()
 
-                            Image("star")
-                                .resizable()
-                                .rotationEffect(.degrees(45))
-                                .frame(width: 24, height: 24)
+                            VStack(spacing: 4) {
+                                Text(isToday ? "Today" : formattedDate(selectedDate))
+                                    .font(AppFonts.vt323(42))
+                                    .foregroundColor(AppColors.primary())
+
+                                if isToday {
+                                    Text(formattedDate())
+                                        .font(AppFonts.rounded(16))
+                                        .foregroundColor(AppColors.primary())
+                                }
+                            }
+
+                            Spacer()
+
+                            Button {
+                                guard !isToday else { return }
+                                selectedDate = Calendar.current.date(byAdding: .day, value: 1, to: selectedDate)!
+                                reloadForSelectedDate()
+                            } label: {
+                                Image(systemName: "chevron.right")
+                                    .font(.title2)
+                                    .opacity(isToday ? 0.3 : 1)
+                                    .foregroundColor(AppColors.primary())
+                            }
+                            .disabled(isToday)
                         }
-
-                        Text(formattedDate())
-                            .font(AppFonts.rounded(16))
-                            .foregroundColor(AppColors.primary())
                     }
+                    .padding(.horizontal, AppLayout.screenPadding)
+
 
                     // MARK: Current Activity Card
                     Group {
-                        if let activity = currentActivity {
-                            CurrentActivityCard(
-                                activity: activity,
-                                onEnd: endCurrentActivity,
-                                onClipSaved: reloadToday
-                            )
+                        if isToday {
+                            if let activity = currentActivity {
+                                CurrentActivityCard(
+                                    activity: activity,
+                                    onEnd: endCurrentActivity,
+                                    onClipSaved: reloadToday
+                                )
+                            } else {
+                                NoActivityCard(
+                                    onStartTapped: onManualStartTapped
+                                )
+                            }
                         } else {
-                            NoActivityCard(
-                                onStartTapped: onManualStartTapped
+                            // Past day placeholder
+                            VStack {
+                                Text("This day has already ended!")
+                                    .font(AppFonts.rounded(16))
+                                    .foregroundColor(AppColors.text(on: AppColors.card()))
+                            }
+                            .padding(24)
+                            .frame(maxWidth: .infinity)
+                            .background(AppColors.card())
+                            .cornerRadius(AppLayout.cornerRadius)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: AppLayout.cornerRadius)
+                                    .stroke(Color.black, lineWidth: 1)
                             )
+                            .shadow(color: Color.black.opacity(0.10), radius: 12, x: 0, y: 4)
                         }
                     }
                     .padding(.top, 32)
@@ -92,7 +138,7 @@ struct TodayView: View {
                     // MARK: Quick Start Row
                     QuickStartRow(
                         activities: resolvedQuickStarts(),
-                        disabled: currentActivity != nil,
+                        disabled: !isToday || currentActivity != nil,
                         onStart: onQuickStart
                     )
                     .padding(.top, 16)
@@ -113,13 +159,13 @@ struct TodayView: View {
                         } else {
                             TimelineSection(
                                 timeline: timeline,
-                                currentActivity: currentActivity,
+                                currentActivity: isToday ? currentActivity : nil,
                                 onDelete: { activity in
                                     DatabaseManager.shared.deleteActivity(id: activity.id)
-                                    reloadToday()
+                                    reloadForSelectedDate()
                                 },
                                 onEdit: onEditTimelineEntry,
-                                reloadToday: reloadToday
+                                reloadToday: reloadForSelectedDate
                             )
                         }
                     }
@@ -146,6 +192,12 @@ struct TodayView: View {
 
     // MARK: Helpers
 
+    private func formattedDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d, yyyy"
+        return formatter.string(from: date)
+    }
+
     private func formattedDate() -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "MM-dd · EEEE · h:mm a"
@@ -169,4 +221,15 @@ struct TodayView: View {
         let remaining = defaultQuickStarts.filter { !top.contains($0) }
         return top + remaining.prefix(4 - top.count)
     }
+    
+    private func reloadForSelectedDate() {
+        if isToday {
+            timeline = DatabaseManager.shared.fetchTodayActivities()
+            currentActivity = DatabaseManager.shared.fetchCurrentActivity()
+        } else {
+            timeline = DatabaseManager.shared.fetchActivities(for: selectedDate)
+            currentActivity = nil
+        }
+    }
+
 }

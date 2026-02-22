@@ -767,6 +767,56 @@ class DatabaseManager {
                 )
             }
         }
+    
+    // MARK: - Fetch activities for an arbitrary day (past or present)
+    func fetchActivities(for date: Date) -> [Activity] {
+        let calendar = Calendar.current
+        let dayStart = calendar.startOfDay(for: date)
+        let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart)!
+
+        let sql = """
+        SELECT id, title, start_time, end_time
+        FROM activities
+        WHERE start_time < \(dayEnd.timeIntervalSince1970)
+          AND (end_time IS NULL OR end_time > \(dayStart.timeIntervalSince1970))
+        ORDER BY start_time;
+        """
+
+        let rows = query(sql: sql)
+        var activities: [Activity] = []
+
+        for row in rows {
+            guard
+                let id = row["id"] as? Int,
+                let title = row["title"] as? String,
+                let startRaw = row["start_time"] as? Double
+            else { continue }
+
+            let activityStart = Date(timeIntervalSince1970: startRaw)
+            let activityEnd = (row["end_time"] as? Double)
+                .map { Date(timeIntervalSince1970: $0) } ?? dayEnd
+
+            // ✂️ Clip activity to this day
+            let clippedStart = max(activityStart, dayStart)
+            let clippedEnd = min(activityEnd, dayEnd)
+
+            let durationMinutes = Int(clippedEnd.timeIntervalSince(clippedStart) / 60)
+            guard durationMinutes > 0 else { continue }
+
+            activities.append(
+                Activity(
+                    id: id,
+                    title: title,
+                    startTime: clippedStart,
+                    endTime: clippedEnd,
+                    durationMinutes: durationMinutes
+                )
+            )
+        }
+
+        return activities
+    }
+
 }
 
 
