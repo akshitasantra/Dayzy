@@ -47,3 +47,14 @@ If you have questions, run into issues, or want to suggest a feature, you can re
 - **Email:** [akshitasantra@gmail.com](mailto:akshitasantra@gmail.com)  
 
 We aim to respond as quickly as possible and appreciate any feedback to help improve Dayzy!  
+
+## Privacy Policy
+Dayzy (“the App”) is a personal activity tracking app. We respect your privacy and are committed to protecting your personal data.
+
+1. **Data Storage:** All activity data, including titles, timestamps, durations, and optional video clips, is stored locally on your device. No data is transmitted to any server.
+
+2. **No Data Collection:** Dayzy does not collect, share, or sell any personal information. There is no login, account creation, or cloud sync in this version.
+
+3. **Third-Party Services:** The app does not use any analytics, advertising, or external services that access your data.
+
+4. **Contact:** If you have any questions regarding privacy, you can contact us at [akshitasantra@gmail.com](mailto:akshitasantra@gmail.com).
