@@ -1,7 +1,7 @@
 # Dayzy
 A SwiftUI-based iOS app to help users track, manage, and visualize their daily activities. DITL allows you to start, edit, and end activities, see a timeline of your day, and view summarized statistics of your time usage.
 
-## Downlaod
+## Download
 Available on the **App Store**:
 (coming soon)
 
