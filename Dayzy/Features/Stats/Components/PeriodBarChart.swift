@@ -8,8 +8,8 @@ struct PeriodBarChart: View {
     let labels: [String]    // day names or month numbers
     let scope: WrappedScope
     
-    let colorCurrent: Color = AppColors.lavenderQuick()
-    let colorPrevious: Color = AppColors.text(on: AppColors.card())
+    let colorCurrent: Color = .black      // current period
+    let colorPrevious: Color = AppColors.lavenderQuick()  // previous period
 
     var body: some View {
         VStack(spacing: 12) {
@@ -46,8 +46,8 @@ struct PeriodBarChart: View {
 
             // Legend
             HStack(spacing: 24) {
-                legendItem(color: colorCurrent, text: "This \(scope.rawValue.lowercased())")
-                legendItem(color: colorPrevious, text: "Last \(scope.rawValue.lowercased())")
+                legendItem(color: colorCurrent, text: "Current \(scope.displayName)")
+                legendItem(color: colorPrevious, text: "Previous \(scope.displayName)")
             }
         }
     }

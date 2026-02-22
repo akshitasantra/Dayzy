@@ -17,7 +17,7 @@ struct BiggestDayCard: View {
 
             Text(formatMinutes(minutes))
                 .font(AppFonts.vt323(24))
-                .foregroundColor(AppColors.lavenderQuick())
+                .foregroundColor(.black)
         }
         .padding()
         .frame(maxWidth: .infinity)

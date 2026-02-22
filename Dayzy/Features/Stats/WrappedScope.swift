@@ -4,4 +4,13 @@ enum WrappedScope: String, CaseIterable, Identifiable {
     case year = "Last Year"
 
     var id: String { rawValue }
+
+    // Clean scope name for legends
+    var displayName: String {
+        switch self {
+        case .week: return "Week"
+        case .month: return "Month"
+        case .year: return "Year"
+        }
+    }
 }

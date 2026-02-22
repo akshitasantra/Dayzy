@@ -36,7 +36,7 @@ struct SQLDashboardView: View {
 
 
                 // Wrapped title
-                Text("Dayzy Wrapped")
+                Text("Dayzy Summary")
                     .font(AppFonts.vt323(42))
                     .foregroundColor(AppColors.primary())
 
@@ -89,12 +89,15 @@ struct SQLDashboardView: View {
                                 .padding(.vertical, 8)
                         }
 
-                        VStack(alignment: .leading, spacing: 12) {
+                        VStack(spacing: 12) {
                             Text("Top Activities")
                                 .font(AppFonts.vt323(28))
+                                .frame(maxWidth: .infinity, alignment: .center) // Centered header
 
-                            ForEach(activities.prefix(5), id: \.0.id) {
-                                WrappedActivityRow(activity: $0.0, minutes: $0.1)
+                            VStack(alignment: .leading, spacing: 12) {
+                                ForEach(activities.prefix(5), id: \.0.id) {
+                                    WrappedActivityRow(activity: $0.0, minutes: $0.1)
+                                }
                             }
                         }
                     }
@@ -123,6 +126,7 @@ struct SQLDashboardView: View {
         }
         
         loadChartData()
+        headerTitle = generateHeaderTitle()
     }
 
     private func computeBiggestDay(from activities: [(Activity, Int)]) {
@@ -137,6 +141,36 @@ struct SQLDashboardView: View {
         if let (date, minutes) = dayTotals.max(by: { $0.value < $1.value }) {
             biggestDay = (date, minutes)
         }
+    }
+
+    private func generateHeaderTitle() -> String {
+        let calendar = Calendar.current
+        let today = Date()
+        
+        switch scope {
+        case .week:
+            let startOfWeek = calendar.date(byAdding: .weekOfYear, value: -offset, to: today)!
+            let weekStart = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: startOfWeek))!
+            let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart)!
+            return "\(formattedDate(weekStart)) – \(formattedDate(weekEnd))"
+        case .month:
+            let monthStart = calendar.date(byAdding: .month, value: -offset, to: today)!
+            let monthRange = calendar.range(of: .day, in: .month, for: monthStart)!
+            let start = calendar.date(from: calendar.dateComponents([.year, .month], from: monthStart))!
+            let end = calendar.date(byAdding: .day, value: monthRange.count - 1, to: start)!
+            return "\(formattedDate(start)) – \(formattedDate(end))"
+        case .year:
+            let yearStart = calendar.date(byAdding: .year, value: -offset, to: today)!
+            let start = calendar.date(from: calendar.dateComponents([.year], from: yearStart))!
+            let end = calendar.date(byAdding: .year, value: 1, to: start)!
+            return "\(formattedDate(start)) – \(formattedDate(end))"
+        }
+    }
+
+    private func formattedDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d"
+        return formatter.string(from: date)
     }
 
 
