@@ -6,57 +6,44 @@ struct TimelineSection: View {
     let onDelete: (Activity) -> Void
     let onEdit: (Activity) -> Void
     let reloadToday: () -> Void
-    
-    private let bg = AppColors.card()
 
     @AppStorage("customThemeData") private var customThemeData: Data?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-
-            // Header
             Text("Add a clip & track your time here")
                 .font(AppFonts.rounded(12))
                 .foregroundColor(AppColors.text(on: AppColors.background()))
                 .frame(maxWidth: .infinity)
                 .multilineTextAlignment(.center)
 
-            // Timeline list
-            List {
-                // Active activity
-                if let active = currentActivity {
-                    TimelineEntryRow(
-                        activity: active,
-                        timeRange: formattedTimeRange(start: active.startTime, end: active.endTime),
-                        onClipSaved: reloadToday
-                    )
-                    .onTapGesture(count: 2) { onEdit(active) }
-                    .listRowSeparator(.hidden)
-                    .listRowBackground(Color.clear)
-                }
+            ScrollView {
+                VStack(spacing: 0) {
+                    LazyVStack(spacing: 12) {
+                        if let active = currentActivity {
+                            TimelineEntryRow(
+                                activity: active,
+                                timeRange: formattedTimeRange(start: active.startTime, end: active.endTime),
+                                onClipSaved: reloadToday,
+                                onDelete: onDelete
+                            )
+                            .onTapGesture(count: 2) { onEdit(active) }
+                        }
 
-                // Completed activities
-                ForEach(timeline.reversed()) { activity in
-                    TimelineEntryRow(
-                        activity: activity,
-                        timeRange: formattedTimeRange(start: activity.startTime, end: activity.endTime),
-                        onClipSaved: reloadToday
-                    
-                    )
-                    .onTapGesture(count: 2) { onEdit(activity) }
-                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                        Button(role: .destructive) { onDelete(activity) } label: {
-                            Label("Delete", systemImage: "trash.fill")
+                        ForEach(timeline.reversed()) { activity in
+                            TimelineEntryRow(
+                                activity: activity,
+                                timeRange: formattedTimeRange(start: activity.startTime, end: activity.endTime),
+                                onClipSaved: reloadToday,
+                                onDelete: onDelete
+                            )
+                            .onTapGesture(count: 2) { onEdit(activity) }
                         }
                     }
-                    .listRowSeparator(.hidden)
-                    .listRowBackground(Color.clear)
+                    .padding(.vertical, 12)
+                    .padding(.horizontal, 12)
                 }
             }
-            .listStyle(.plain)
-            .scrollDisabled(true)
-            .frame(maxWidth: .infinity)
-            .frame(height: listHeight)
             .background(AppColors.card())
             .cornerRadius(AppLayout.cornerRadius)
             .overlay(
@@ -69,18 +56,13 @@ struct TimelineSection: View {
         .padding(.top, 8)
     }
 
-    // MARK: Helpers
     private func formattedTimeRange(start: Date, end: Date?) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "h:mm a"
         return "\(formatter.string(from: start)) – \(formatter.string(from: end ?? Date()))"
     }
-
-    private var listHeight: CGFloat {
-        let rowCount = (currentActivity == nil ? 0 : 1) + timeline.count
-        return max(CGFloat(rowCount) * 52.5, 50)
-    }
 }
+
 
 // MARK: Empty Timeline Placeholder
 struct EmptyTimelineView: View {
