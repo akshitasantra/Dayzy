@@ -216,15 +216,13 @@ class DatabaseManager {
             let sliceEnd = min(activityEnd, todayEnd)
             let duration = Int(sliceEnd.timeIntervalSince(sliceStart) / 60)
 
-            if duration > 0 {
-                activities.append(Activity(
-                    id: id,
-                    title: title,
-                    startTime: sliceStart,
-                    endTime: sliceEnd,
-                    durationMinutes: duration
-                ))
-            }
+            activities.append(Activity(
+                id: id,
+                title: title,
+                startTime: sliceStart,
+                endTime: sliceEnd,
+                durationMinutes: max(duration, 0)
+            ))
         }
 
         return activities
