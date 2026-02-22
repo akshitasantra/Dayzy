@@ -1,17 +1,13 @@
 import SwiftUI
 
-struct Asset: Identifiable, Equatable {
-    let id: String  // This will hold the assetId string
-}
-
 struct TimelineEntryRow: View {
     let activity: Activity
     let timeRange: String
+    let onClipSaved: () -> Void
 
     @State private var showRecorder = false
     @State private var showPicker = false
-    @State private var editingAssetId: String? = nil
-    @State private var editingAsset: Asset? = nil
+    @State private var editingAsset: EditingAsset? = nil
 
     private let bg = AppColors.card()
 
@@ -42,7 +38,7 @@ struct TimelineEntryRow: View {
             VideoRecorderView(
                 onSaved: { assetId in
                     showRecorder = false
-                    editingAsset = Asset(id: assetId)
+                    editingAsset = EditingAsset(id: assetId)
                 },
                 onCancel: {
                     showRecorder = false
@@ -55,7 +51,7 @@ struct TimelineEntryRow: View {
             VideoPickerView(
                 onPicked: { assetId in
                     showPicker = false
-                    editingAsset = Asset(id: assetId)
+                    editingAsset = EditingAsset(id: assetId)
                 },
                 onCancel: {
                     showPicker = false
@@ -63,15 +59,19 @@ struct TimelineEntryRow: View {
             )
         }
         // ✂️ Clip Editor
-        // ✂️ Clip Editor
         .sheet(item: $editingAsset) { asset in
             ClipEditorView(
                 assetId: asset.id,
                 activityName: activity.title,
                 activityStart: activity.startTime,
                 onSaved: { newAssetId, metadata in
+                    DatabaseManager.shared.addVideoClip(
+                        activityId: activity.id,
+                        assetId: newAssetId,
+                        metadata: metadata
+                    )
                     editingAsset = nil
-                    // TODO: save metadata
+                    onClipSaved()
                 },
                 onCancel: {
                     editingAsset = nil

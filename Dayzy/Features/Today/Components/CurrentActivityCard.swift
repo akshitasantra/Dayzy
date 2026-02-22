@@ -4,15 +4,15 @@ import Combine
 struct CurrentActivityCard: View {
     let activity: Activity
     let onEnd: () -> Void
+    let onClipSaved: () -> Void
 
     private let cardBackground = AppColors.card()
     private let primaryBackground = AppColors.primary()
 
     @State private var showRecorder = false
     @State private var showPicker = false
-    @State private var editingAssetId: String? = nil
     @State private var elapsed: TimeInterval = 0
-    @State private var editingAsset: Asset? = nil
+    @State private var editingAsset: EditingAsset? = nil
 
 
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
@@ -100,7 +100,7 @@ struct CurrentActivityCard: View {
             VideoRecorderView(
                 onSaved: { assetId in
                     showRecorder = false
-                    editingAsset = Asset(id: assetId)
+                    editingAsset = EditingAsset(id: assetId)
                 },
                 onCancel: {
                     showRecorder = false
@@ -113,7 +113,7 @@ struct CurrentActivityCard: View {
             VideoPickerView(
                 onPicked: { assetId in
                     showPicker = false
-                    editingAsset = Asset(id: assetId)
+                    editingAsset = EditingAsset(id: assetId)
                 },
                 onCancel: {
                     showPicker = false
@@ -127,8 +127,13 @@ struct CurrentActivityCard: View {
                 activityName: activity.title,
                 activityStart: activity.startTime,
                 onSaved: { newAssetId, metadata in
+                    DatabaseManager.shared.addVideoClip(
+                        activityId: activity.id,
+                        assetId: newAssetId,
+                        metadata: metadata
+                    )
                     editingAsset = nil
-                    // TODO: save metadata
+                    onClipSaved()
                 },
                 onCancel: {
                     editingAsset = nil

@@ -19,6 +19,8 @@ struct ContentView: View {
     @State private var timeline: [Activity] = []
     @State private var editingActivity: Activity?
     @State private var addingActivity = false
+    
+    @State private var todayClips: [ClipMetadata] = []
 
     var body: some View {
         ZStack {
@@ -55,6 +57,7 @@ private extension ContentView {
             TodayView(
                 currentActivity: $currentActivity,
                 timeline: $timeline,
+                todayClips: todayClips,
                 onSettingsTapped: { openSettings(from: .today) },
                 onWrappedTapped: { selectedTab = .stats },
                 onQuickStart: startActivity,
@@ -163,13 +166,14 @@ private extension ContentView {
 private extension ContentView {
     func reloadToday() {
         let allActivities = DatabaseManager.shared.fetchTodayActivities()
-        
-        // Exclude the currently running activity (endTime == nil in DB)
+
         if let running = currentActivity {
             timeline = allActivities.filter { $0.id != running.id }
         } else {
             timeline = allActivities
         }
+
+        todayClips = DatabaseManager.shared.fetchClipsForToday()
     }
 
     func startActivity(title: String) {

@@ -5,6 +5,7 @@ struct TimelineSection: View {
     let currentActivity: Activity?
     let onDelete: (Activity) -> Void
     let onEdit: (Activity) -> Void
+    let reloadToday: () -> Void
     
     private let bg = AppColors.card()
 
@@ -26,7 +27,8 @@ struct TimelineSection: View {
                 if let active = currentActivity {
                     TimelineEntryRow(
                         activity: active,
-                        timeRange: formattedTimeRange(start: active.startTime, end: active.endTime)
+                        timeRange: formattedTimeRange(start: active.startTime, end: active.endTime),
+                        onClipSaved: reloadToday
                     )
                     .onTapGesture(count: 2) { onEdit(active) }
                     .listRowSeparator(.hidden)
@@ -37,7 +39,9 @@ struct TimelineSection: View {
                 ForEach(timeline.reversed()) { activity in
                     TimelineEntryRow(
                         activity: activity,
-                        timeRange: formattedTimeRange(start: activity.startTime, end: activity.endTime)
+                        timeRange: formattedTimeRange(start: activity.startTime, end: activity.endTime),
+                        onClipSaved: reloadToday
+                    
                     )
                     .onTapGesture(count: 2) { onEdit(activity) }
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {

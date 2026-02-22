@@ -4,10 +4,14 @@ struct TodayView: View {
     // MARK: Bindings
     @Binding var currentActivity: Activity?
     @Binding var timeline: [Activity]
+    
+    let todayClips: [ClipMetadata]
 
     // MARK: App Theme
-@AppStorage("customThemeData") private var customThemeData: Data?
+    @AppStorage("customThemeData") private var customThemeData: Data?
 
+    @State private var showDayPreview = false
+    @State private var previewClips: [ClipMetadata] = []
 
     // MARK: Callbacks
     let onSettingsTapped: () -> Void
@@ -73,7 +77,8 @@ struct TodayView: View {
                         if let activity = currentActivity {
                             CurrentActivityCard(
                                 activity: activity,
-                                onEnd: endCurrentActivity
+                                onEnd: endCurrentActivity,
+                                onClipSaved: reloadToday
                             )
                         } else {
                             NoActivityCard(
@@ -113,7 +118,8 @@ struct TodayView: View {
                                     DatabaseManager.shared.deleteActivity(id: activity.id)
                                     reloadToday()
                                 },
-                                onEdit: onEditTimelineEntry
+                                onEdit: onEditTimelineEntry,
+                                reloadToday: reloadToday
                             )
                         }
                     }
@@ -135,6 +141,8 @@ struct TodayView: View {
             }
         }
     }
+    
+
 
     // MARK: Helpers
 
