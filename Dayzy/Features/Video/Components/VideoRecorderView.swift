@@ -72,6 +72,27 @@ class VideoRecorderController: UIViewController {
     private var recordingTimer: Timer?
     private var secondsElapsed = 0
     private var isRecording = false
+    
+    @objc private func flipCamera() {
+        guard let currentInput = videoDeviceInput else { return }
+
+        session.beginConfiguration()
+        session.removeInput(currentInput)
+
+        let newPosition: AVCaptureDevice.Position = currentInput.device.position == .back ? .front : .back
+
+        guard let newDevice = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: newPosition),
+              let newInput = try? AVCaptureDeviceInput(device: newDevice),
+              session.canAddInput(newInput) else {
+            session.addInput(currentInput) // fallback
+            session.commitConfiguration()
+            return
+        }
+
+        session.addInput(newInput)
+        videoDeviceInput = newInput
+        session.commitConfiguration()
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -113,9 +134,15 @@ class VideoRecorderController: UIViewController {
         previewLayer.frame = view.bounds
         previewLayer.videoGravity = .resizeAspectFill
         view.layer.addSublayer(previewLayer)
+        
+        let doubleTapGesture = UITapGestureRecognizer(target: self, action: #selector(flipCamera))
+        doubleTapGesture.numberOfTapsRequired = 2
+        view.addGestureRecognizer(doubleTapGesture)
     }
 
+
     private func setupButtons() {
+        // Existing recordButton
         recordButton = UIButton(type: .system)
         recordButton.frame = CGRect(x: view.bounds.midX - 35, y: view.bounds.height - 150, width: 70, height: 70)
         recordButton.backgroundColor = .red
@@ -125,12 +152,33 @@ class VideoRecorderController: UIViewController {
         recordButton.layer.borderColor = UIColor.white.cgColor
         view.addSubview(recordButton)
 
+        // Cancel button
         let cancelButton = UIButton(type: .system)
         cancelButton.frame = CGRect(x: 20, y: 50, width: 60, height: 40)
         cancelButton.setTitle("Cancel", for: .normal)
         cancelButton.setTitleColor(.white, for: .normal)
         cancelButton.addTarget(self, action: #selector(cancelPressed), for: .touchUpInside)
         view.addSubview(cancelButton)
+        
+        // Flip camera button like Apple Camera
+        let flipButtonSize: CGFloat = 50
+        let flipButton = UIButton(type: .system)
+        flipButton.frame = CGRect(x: view.bounds.width - flipButtonSize - 20,
+                                  y: view.bounds.height - flipButtonSize - 150,
+                                  width: flipButtonSize,
+                                  height: flipButtonSize)
+        
+        // Make circular, semi-transparent background
+        flipButton.backgroundColor = UIColor(white: 0.2, alpha: 0.5)
+        flipButton.layer.cornerRadius = flipButtonSize / 2
+        
+        // Add SF Symbol icon
+        let flipImage = UIImage(systemName: "arrow.triangle.2.circlepath.camera")
+        flipButton.setImage(flipImage, for: .normal)
+        flipButton.tintColor = .white
+        
+        flipButton.addTarget(self, action: #selector(flipCamera), for: .touchUpInside)
+        view.addSubview(flipButton)
     }
 
     private func setupTimerLabel() {
