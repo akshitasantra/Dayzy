@@ -15,7 +15,7 @@ struct AboutSection: View {
                 .multilineTextAlignment(.center)
 
             VStack(spacing: 12) {
-                Text("App Version: v0.1")
+                Text("App Version: v1.1")
                     .font(AppFonts.vt323(18))
                     .foregroundColor(textColor)
 

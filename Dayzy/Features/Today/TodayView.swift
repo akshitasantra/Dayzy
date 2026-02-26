@@ -185,8 +185,16 @@ struct TodayView: View {
                     .padding(.bottom, 40)
                 }
             }
+        }.onAppear {
+            // Always reset selectedDate to today when opening the view
+            let today = Date()
+            if !Calendar.current.isDate(selectedDate, inSameDayAs: today) {
+                selectedDate = today
+                reloadForSelectedDate()
+            }
         }
     }
+    
     
 
 
