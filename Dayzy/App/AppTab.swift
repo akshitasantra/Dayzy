@@ -182,4 +182,3 @@ private extension ContentView {
         reloadToday()
     }
 }
-

@@ -232,8 +232,14 @@ struct TodayView: View {
     
     private func reloadForSelectedDate() {
         if isToday {
-            timeline = DatabaseManager.shared.fetchTodayActivities()
-            currentActivity = DatabaseManager.shared.fetchCurrentActivity()
+            let all = DatabaseManager.shared.fetchTodayActivities()
+            let running = DatabaseManager.shared.fetchCurrentActivity()
+            currentActivity = running
+            if let running {
+                timeline = all.filter { $0.id != running.id }
+            } else {
+                timeline = all
+            }
         } else {
             timeline = DatabaseManager.shared.fetchActivities(for: selectedDate)
             currentActivity = nil
