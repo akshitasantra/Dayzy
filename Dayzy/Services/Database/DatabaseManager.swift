@@ -798,8 +798,9 @@ class DatabaseManager {
             let clippedStart = max(activityStart, dayStart)
             let clippedEnd = min(activityEnd, dayEnd)
 
-            let durationMinutes = Int(clippedEnd.timeIntervalSince(clippedStart) / 60)
-            guard durationMinutes > 0 else { continue }
+            let durationSeconds = clippedEnd.timeIntervalSince(clippedStart)
+            guard durationSeconds > 0 else { continue }
+            let durationMinutes = Int(durationSeconds / 60)
 
             activities.append(
                 Activity(
@@ -842,8 +843,9 @@ class DatabaseManager {
             let clippedStart = max(activityStart, start)
             let clippedEnd = min(activityEnd, end)
 
-            let durationMinutes = Int(clippedEnd.timeIntervalSince(clippedStart) / 60)
-            guard durationMinutes > 0 else { continue }
+            let durationSeconds = clippedEnd.timeIntervalSince(clippedStart)
+            guard durationSeconds > 0 else { continue }
+            let durationMinutes = Int(durationSeconds / 60)
 
             activities.append(
                 Activity(
@@ -860,4 +862,3 @@ class DatabaseManager {
     }
 
 }
-
