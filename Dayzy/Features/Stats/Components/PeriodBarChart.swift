@@ -2,6 +2,8 @@ import SwiftUI
 
 struct PeriodBarChart: View {
     private let cardBackground = AppColors.card()
+    private let chartHeight: CGFloat = 180
+    private let labelHeight: CGFloat = 18
     
     let current: [Int]
     let previous: [Int]
@@ -12,31 +14,42 @@ struct PeriodBarChart: View {
     let colorPrevious: Color = AppColors.lavenderQuick()
     
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 6) {
             // Bars
             HStack(alignment: .bottom, spacing: 8) {
                 ForEach(0..<labels.count, id: \.self) { i in
-                    VStack(spacing: 4) {
-                        HStack(spacing: 2) {
-                            Rectangle()
-                                .fill(colorPrevious)
-                                .frame(height: barHeight(for: previous[i]))
-                            Rectangle()
-                                .fill(colorCurrent)
-                                .frame(height: barHeight(for: current[i]))
-                        }
-                        .frame(maxWidth: .infinity, alignment: .bottom)
-                        
-                        // Label
-                        Text(labels[i])
-                            .font(.caption)
-                            .rotationEffect(labels.count > 7 ? .degrees(-45) : .degrees(0))
-                            .frame(height: 20)
-                            .foregroundColor(AppColors.text(on: cardBackground))
+                    let currentValue = i < current.count ? current[i] : 0
+                    let previousValue = i < previous.count ? previous[i] : 0
+                    HStack(alignment: .bottom, spacing: 2) {
+                        Rectangle()
+                            .fill(colorCurrent)
+                            .frame(height: barHeight(for: currentValue))
+                        Rectangle()
+                            .fill(colorPrevious)
+                            .frame(height: barHeight(for: previousValue))
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
                 }
             }
-            .frame(height: 200) // fixed chart height
+            .frame(height: chartHeight)
+            .overlay(
+                Rectangle()
+                    .fill(AppColors.text(on: cardBackground).opacity(0.12))
+                    .frame(height: 1),
+                alignment: .bottom
+            )
+
+            // Labels
+            HStack(alignment: .top, spacing: 8) {
+                ForEach(0..<labels.count, id: \.self) { i in
+                    Text(labels[i])
+                        .font(.caption)
+                        .rotationEffect(labels.count > 7 ? .degrees(-45) : .degrees(0))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: labelHeight)
+                        .foregroundColor(AppColors.text(on: cardBackground))
+                }
+            }
             
             // Legend
             HStack(spacing: 24) {
@@ -60,7 +73,6 @@ struct PeriodBarChart: View {
     private func barHeight(for value: Int) -> CGFloat {
         // Use max of both periods to normalize
         let maxVal = max((current + previous).max() ?? 1, 1)
-        let maxHeight: CGFloat = 200
-        return CGFloat(value) / CGFloat(maxVal) * maxHeight
+        return CGFloat(value) / CGFloat(maxVal) * chartHeight
     }
 }

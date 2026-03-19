@@ -583,7 +583,7 @@ class DatabaseManager {
 
             let startTime = Date(timeIntervalSince1970: startRaw)
             let endTime = (row["end_time"] as? Double)
-                .map { Date(timeIntervalSince1970: $0) } ?? end
+                .map { Date(timeIntervalSince1970: $0) } ?? min(end, now)
 
             let clippedStart = max(startTime, start)
             let clippedEnd = min(endTime, end)
@@ -815,6 +815,49 @@ class DatabaseManager {
         return activities
     }
 
-}
+    // MARK: - Fetch activities overlapping a time range (clipped to range)
+    func fetchActivities(in start: Date, end: Date) -> [Activity] {
+        let sql = """
+        SELECT id, title, start_time, end_time
+        FROM activities
+        WHERE start_time < \(end.timeIntervalSince1970)
+          AND (end_time IS NULL OR end_time > \(start.timeIntervalSince1970))
+        ORDER BY start_time;
+        """
 
+        let rows = query(sql: sql)
+        var activities: [Activity] = []
+
+        for row in rows {
+            guard
+                let id = row["id"] as? Int,
+                let title = row["title"] as? String,
+                let startRaw = row["start_time"] as? Double
+            else { continue }
+
+            let activityStart = Date(timeIntervalSince1970: startRaw)
+            let activityEnd = (row["end_time"] as? Double)
+                .map { Date(timeIntervalSince1970: $0) } ?? min(end, Date())
+
+            let clippedStart = max(activityStart, start)
+            let clippedEnd = min(activityEnd, end)
+
+            let durationMinutes = Int(clippedEnd.timeIntervalSince(clippedStart) / 60)
+            guard durationMinutes > 0 else { continue }
+
+            activities.append(
+                Activity(
+                    id: id,
+                    title: title,
+                    startTime: clippedStart,
+                    endTime: clippedEnd,
+                    durationMinutes: durationMinutes
+                )
+            )
+        }
+
+        return activities
+    }
+
+}
 

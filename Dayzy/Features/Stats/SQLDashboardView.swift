@@ -60,8 +60,8 @@ struct SQLDashboardView: View {
 
                 WrappedPeriodHeader(
                     title: headerTitle,
-                    onPrevious: { offset -= 1; load() },
-                    onNext: { offset += 1; load() },
+                    onPrevious: { offset += 1; load() },
+                    onNext: { offset = max(0, offset - 1); load() },
                     disableNext: isCurrentPeriod
                 )
 
@@ -115,12 +115,14 @@ struct SQLDashboardView: View {
         headerTitle = stats.title
 
         // Calculate previous period
-        let previousStats = DatabaseManager.shared.stats(for: scope, offset: offset - 1)
+        let previousStats = DatabaseManager.shared.stats(for: scope, offset: offset + 1)
         previousMinutes = previousStats.total
 
         // Compute biggest day if year view
         if scope == .year {
-            computeBiggestDay(from: stats.activities)
+            let range = periodRange(for: .year, offset: offset, calendar: Calendar.current)
+            let yearActivities = DatabaseManager.shared.fetchActivities(in: range.start, end: range.end)
+            computeBiggestDay(from: yearActivities)
         } else {
             biggestDay = nil
         }
@@ -129,17 +131,32 @@ struct SQLDashboardView: View {
         headerTitle = generateHeaderTitle()
     }
 
-    private func computeBiggestDay(from activities: [(Activity, Int)]) {
+    private func computeBiggestDay(from activities: [Activity]) {
         var dayTotals: [Date: Int] = [:]
         let calendar = Calendar.current
 
-        for (activity, minutes) in activities {
-            let day = calendar.startOfDay(for: activity.startTime)
-            dayTotals[day, default: 0] += minutes
+        for activity in activities {
+            var cursor = activity.startTime
+            let end = activity.endTime ?? cursor
+
+            while cursor < end {
+                let dayStart = calendar.startOfDay(for: cursor)
+                let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart)!
+                let sliceEnd = min(dayEnd, end)
+
+                let minutes = Int(sliceEnd.timeIntervalSince(cursor) / 60)
+                if minutes > 0 {
+                    dayTotals[dayStart, default: 0] += minutes
+                }
+
+                cursor = sliceEnd
+            }
         }
 
         if let (date, minutes) = dayTotals.max(by: { $0.value < $1.value }) {
             biggestDay = (date, minutes)
+        } else {
+            biggestDay = nil
         }
     }
 
@@ -181,92 +198,197 @@ struct SQLDashboardView: View {
         previousPeriodTotals = []
 
         let calendar = Calendar.current
+        let currentRange = periodRange(for: scope, offset: offset, calendar: calendar)
+        let previousRange = periodRange(for: scope, offset: offset + 1, calendar: calendar)
+
+        let currentActivities = DatabaseManager.shared.fetchActivities(in: currentRange.start, end: currentRange.end)
+        let previousActivities = DatabaseManager.shared.fetchActivities(in: previousRange.start, end: previousRange.end)
 
         switch scope {
         case .week:
-            // Determine start of the current week based on offset
-            guard let startOfWeek = calendar.date(byAdding: .weekOfYear, value: -offset, to: calendar.startOfDay(for: Date())) else { return }
-            let weekStart = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: startOfWeek))!
+            let formatter = DateFormatter()
+            formatter.dateFormat = "EEE"
+            chartLabels = (0..<7).compactMap {
+                calendar.date(byAdding: .day, value: $0, to: currentRange.start)
+            }.map { formatter.string(from: $0) }
 
-            // Previous week start
-            let prevWeekStart = calendar.date(byAdding: .weekOfYear, value: -1, to: weekStart)!
-
-            chartLabels = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]
-            currentPeriodTotals = Array(repeating: 0, count: 7)
-            previousPeriodTotals = Array(repeating: 0, count: 7)
-
-            let statsCurrent = DatabaseManager.shared.stats(for: .week, offset: offset)
-            let statsPrev = DatabaseManager.shared.stats(for: .week, offset: offset - 1)
-
-            for (activity, minutes) in statsCurrent.activities {
-                let dayIndex = calendar.component(.weekday, from: activity.startTime) - 2
-                let index = (dayIndex < 0 ? 6 : dayIndex) // Sun -> 6
-                currentPeriodTotals[index] += minutes
-            }
-
-            for (activity, minutes) in statsPrev.activities {
-                let dayIndex = calendar.component(.weekday, from: activity.startTime) - 2
-                let index = (dayIndex < 0 ? 6 : dayIndex)
-                previousPeriodTotals[index] += minutes
-            }
+            currentPeriodTotals = dailyTotals(
+                for: currentActivities,
+                start: currentRange.start,
+                days: 7,
+                calendar: calendar
+            )
+            previousPeriodTotals = dailyTotals(
+                for: previousActivities,
+                start: previousRange.start,
+                days: 7,
+                calendar: calendar
+            )
 
         case .month:
-            // Current month start
-            guard let monthStart = calendar.date(byAdding: .month, value: -offset, to: calendar.startOfDay(for: Date())) else { return }
-            
-            // Get number of weeks in month
-            let monthRange = calendar.range(of: .day, in: .month, for: monthStart)!
-            let numDays = monthRange.count
-            
-            // Map each day to week index
-            var weekIndices: [Int] = []
-            for day in 1...numDays {
-                if let date = calendar.date(bySetting: .day, value: day, of: monthStart) {
-                    let weekOfMonth = calendar.component(.weekOfMonth, from: date) - 1 // 0-based
-                    weekIndices.append(weekOfMonth)
-                }
-            }
-            
-            let numWeeks = weekIndices.max() ?? 3 // number of weeks in month
-            currentPeriodTotals = Array(repeating: 0, count: numWeeks + 1)
-            previousPeriodTotals = Array(repeating: 0, count: numWeeks + 1)
-            chartLabels = (0...numWeeks).map { "Week \($0 + 1)" }
+            let currentMonthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: currentRange.start))!
+            let previousMonthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: previousRange.start))!
 
-            let statsCurrent = DatabaseManager.shared.stats(for: .month, offset: offset)
-            let statsPrev = DatabaseManager.shared.stats(for: .month, offset: offset - 1)
+            let currentDays = calendar.range(of: .day, in: .month, for: currentMonthStart)?.count ?? 30
+            let previousDays = calendar.range(of: .day, in: .month, for: previousMonthStart)?.count ?? 30
 
-            for (activity, minutes) in statsCurrent.activities {
-                let weekIndex = calendar.component(.weekOfMonth, from: activity.startTime) - 1
-                currentPeriodTotals[weekIndex] += minutes
-            }
+            let currentDayTotals = dailyTotals(
+                for: currentActivities,
+                start: currentMonthStart,
+                days: currentDays,
+                calendar: calendar
+            )
+            let previousDayTotals = dailyTotals(
+                for: previousActivities,
+                start: previousMonthStart,
+                days: previousDays,
+                calendar: calendar
+            )
 
-            for (activity, minutes) in statsPrev.activities {
-                let weekIndex = calendar.component(.weekOfMonth, from: activity.startTime) - 1
-                previousPeriodTotals[weekIndex] += minutes
-            }
+            let currentWeekCount = weekCount(in: currentMonthStart, calendar: calendar)
+            let previousWeekCount = weekCount(in: previousMonthStart, calendar: calendar)
+            let weekCount = max(currentWeekCount, previousWeekCount)
+
+            chartLabels = (1...weekCount).map { "Week \($0)" }
+            currentPeriodTotals = weekTotals(
+                dayTotals: currentDayTotals,
+                monthStart: currentMonthStart,
+                weekCount: weekCount,
+                calendar: calendar
+            )
+            previousPeriodTotals = weekTotals(
+                dayTotals: previousDayTotals,
+                monthStart: previousMonthStart,
+                weekCount: weekCount,
+                calendar: calendar
+            )
 
 
         case .year:
-            // Current year
-            guard let yearStart = calendar.date(byAdding: .year, value: -offset, to: calendar.startOfDay(for: Date())) else { return }
+            let formatter = DateFormatter()
+            formatter.dateFormat = "MMM"
+            chartLabels = formatter.shortMonthSymbols
 
-            chartLabels = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
-            currentPeriodTotals = Array(repeating: 0, count: 12)
-            previousPeriodTotals = Array(repeating: 0, count: 12)
+            let currentYearStart = calendar.date(from: calendar.dateComponents([.year], from: currentRange.start))!
+            let previousYearStart = calendar.date(from: calendar.dateComponents([.year], from: previousRange.start))!
 
-            let statsCurrent = DatabaseManager.shared.stats(for: .year, offset: offset)
-            let statsPrev = DatabaseManager.shared.stats(for: .year, offset: offset - 1)
+            currentPeriodTotals = monthlyTotals(
+                for: currentActivities,
+                start: currentYearStart,
+                months: 12,
+                calendar: calendar
+            )
+            previousPeriodTotals = monthlyTotals(
+                for: previousActivities,
+                start: previousYearStart,
+                months: 12,
+                calendar: calendar
+            )
+        }
+    }
 
-            for (activity, minutes) in statsCurrent.activities {
-                let month = calendar.component(.month, from: activity.startTime)
-                currentPeriodTotals[month - 1] += minutes
-            }
+    private func periodRange(for scope: WrappedScope, offset: Int, calendar: Calendar) -> (start: Date, end: Date) {
+        let now = Date()
+        switch scope {
+        case .week:
+            let base = calendar.date(byAdding: .weekOfYear, value: -offset, to: now)!
+            let start = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: base))!
+            let end = calendar.date(byAdding: .day, value: 7, to: start)!
+            return (start, end)
+        case .month:
+            let base = calendar.date(byAdding: .month, value: -offset, to: now)!
+            let start = calendar.date(from: calendar.dateComponents([.year, .month], from: base))!
+            let end = calendar.date(byAdding: .month, value: 1, to: start)!
+            return (start, end)
+        case .year:
+            let base = calendar.date(byAdding: .year, value: -offset, to: now)!
+            let start = calendar.date(from: calendar.dateComponents([.year], from: base))!
+            let end = calendar.date(byAdding: .year, value: 1, to: start)!
+            return (start, end)
+        }
+    }
 
-            for (activity, minutes) in statsPrev.activities {
-                let month = calendar.component(.month, from: activity.startTime)
-                previousPeriodTotals[month - 1] += minutes
+    private func dailyTotals(for activities: [Activity], start: Date, days: Int, calendar: Calendar) -> [Int] {
+        var totals = Array(repeating: 0, count: days)
+        let startDay = calendar.startOfDay(for: start)
+
+        for activity in activities {
+            var cursor = activity.startTime
+            let end = activity.endTime ?? cursor
+
+            while cursor < end {
+                let dayStart = calendar.startOfDay(for: cursor)
+                let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart)!
+                let sliceEnd = min(dayEnd, end)
+
+                let minutes = Int(sliceEnd.timeIntervalSince(cursor) / 60)
+                if minutes > 0 {
+                    let index = calendar.dateComponents([.day], from: startDay, to: dayStart).day ?? -1
+                    if index >= 0 && index < totals.count {
+                        totals[index] += minutes
+                    }
+                }
+
+                cursor = sliceEnd
             }
         }
+
+        return totals
+    }
+
+    private func weekCount(in monthStart: Date, calendar: Calendar) -> Int {
+        guard let range = calendar.range(of: .day, in: .month, for: monthStart) else { return 4 }
+        var maxWeek = 1
+        for day in range {
+            if let date = calendar.date(bySetting: .day, value: day, of: monthStart) {
+                maxWeek = max(maxWeek, calendar.component(.weekOfMonth, from: date))
+            }
+        }
+        return maxWeek
+    }
+
+    private func weekTotals(dayTotals: [Int], monthStart: Date, weekCount: Int, calendar: Calendar) -> [Int] {
+        var totals = Array(repeating: 0, count: weekCount)
+        let days = dayTotals.count
+        guard days > 0 else { return totals }
+
+        for day in 1...days {
+            if let date = calendar.date(bySetting: .day, value: day, of: monthStart) {
+                let weekIndex = calendar.component(.weekOfMonth, from: date) - 1
+                if weekIndex >= 0 && weekIndex < totals.count {
+                    totals[weekIndex] += dayTotals[day - 1]
+                }
+            }
+        }
+        return totals
+    }
+
+    private func monthlyTotals(for activities: [Activity], start: Date, months: Int, calendar: Calendar) -> [Int] {
+        var totals = Array(repeating: 0, count: months)
+        let startMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: start))!
+
+        for activity in activities {
+            var cursor = activity.startTime
+            let end = activity.endTime ?? cursor
+
+            while cursor < end {
+                let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: cursor))!
+                let monthEnd = calendar.date(byAdding: .month, value: 1, to: monthStart)!
+                let sliceEnd = min(monthEnd, end)
+
+                let minutes = Int(sliceEnd.timeIntervalSince(cursor) / 60)
+                if minutes > 0 {
+                    let index = calendar.dateComponents([.month], from: startMonth, to: monthStart).month ?? -1
+                    if index >= 0 && index < totals.count {
+                        totals[index] += minutes
+                    }
+                }
+
+                cursor = sliceEnd
+            }
+        }
+
+        return totals
     }
 }
 
@@ -279,4 +401,3 @@ func formatMinutes(_ totalMinutes: Int) -> String {
         return "\(minutes) min"
     }
 }
-
