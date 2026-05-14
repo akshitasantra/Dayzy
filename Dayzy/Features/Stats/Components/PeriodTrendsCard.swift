@@ -18,7 +18,6 @@ struct PeriodTrendsCard: View {
                 let percent = previous > 0 ? Double(diff) / Double(previous) * 100 : 0
 
                 HStack(spacing: 12) {
-                    // Arrow indicator
                     Image(systemName: diff >= 0 ? "arrow.up" : "arrow.down")
                         .foregroundColor(AppColors.text(on: cardBackground))
 
@@ -30,6 +29,7 @@ struct PeriodTrendsCard: View {
                         Text("Average per \(averageUnit()): \(formatMinutes(averageMinutes()))")
                             .font(AppFonts.rounded(16))
                             .foregroundColor(AppColors.text(on: cardBackground))
+
                         Text(String(format: "Change: %.0f%%", abs(percent)))
                             .font(AppFonts.rounded(16))
                             .foregroundColor(AppColors.text(on: cardBackground))
@@ -62,21 +62,35 @@ struct PeriodTrendsCard: View {
 
     private func averageUnit() -> String {
         switch scope {
-        case .week: return "day"
-        case .month: return "day"
+        case .week, .month: return "day"
         case .year: return "month"
         }
     }
 
     private func averageMinutes() -> Int {
+        let elapsed = elapsedUnitsInCurrentScope()
+        guard elapsed > 0 else { return totalMinutes }
+        return totalMinutes / elapsed
+    }
+
+    private func elapsedUnitsInCurrentScope() -> Int {
+        let calendar = Calendar.current
+        let now = Date()
+
         switch scope {
         case .week:
-            return totalMinutes / 7
+            guard let weekStart = calendar.dateInterval(of: .weekOfYear, for: now)?.start else {
+                return 1
+            }
+            let days = calendar.dateComponents([.day], from: weekStart, to: now).day ?? 0
+            return max(1, days + 1) // include today
+
         case .month:
-            let daysInMonth = Calendar.current.range(of: .day, in: .month, for: Date())?.count ?? 30
-            return totalMinutes / daysInMonth
+            return max(1, calendar.component(.day, from: now))
+
         case .year:
-            return totalMinutes / 12
+            return max(1, calendar.component(.month, from: now))
         }
     }
 }
+
