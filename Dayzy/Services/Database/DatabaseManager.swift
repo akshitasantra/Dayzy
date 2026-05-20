@@ -187,6 +187,13 @@ class DatabaseManager {
         return (start, end)
     }
 
+    private func overlapMinutes(activityStart: Date, activityEnd: Date, rangeStart: Date, rangeEnd: Date) -> Int {
+        let clippedStart = max(activityStart, rangeStart)
+        let clippedEnd = min(activityEnd, rangeEnd)
+        let seconds = clippedEnd.timeIntervalSince(clippedStart)
+        return max(0, Int(seconds / 60))
+    }
+    
     // MARK: - Fetch today's activities with split logic
     func fetchTodayActivities() -> [Activity] {
         let (todayStart, todayEnd) = todayInterval()
@@ -532,52 +539,37 @@ class DatabaseManager {
         return rows.compactMap { $0["title"] as? String }
     }
     
-    func stats(for scope: WrappedScope, offset: Int, referenceDate: Date = Date()) -> StatsResult {
+    func stats(for scope: WrappedScope, offset: Int) -> StatsResult {
         let calendar = Calendar.current
+        let now = Date()
 
-        func periodRange(offset: Int) -> (start: Date, end: Date, title: String) {
-            switch scope {
-            case .week:
-                let shifted = calendar.date(byAdding: .weekOfYear, value: -offset, to: referenceDate)!
-                let start = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: shifted))!
-                let end = calendar.date(byAdding: .day, value: 7, to: start)!
-                let title = offset == 0 ? "This Week" : "\(offset) Weeks Ago"
-                return (start, end, title)
+        let (start, end, title): (Date, Date, String)
 
-            case .month:
-                let shifted = calendar.date(byAdding: .month, value: -offset, to: referenceDate)!
-                let start = calendar.date(from: calendar.dateComponents([.year, .month], from: shifted))!
-                let end = calendar.date(byAdding: .month, value: 1, to: start)!
-                let title = offset == 0 ? "This Month" : "\(offset) Months Ago"
-                return (start, end, title)
+        switch scope {
+        case .week:
+            let shifted = calendar.date(byAdding: .weekOfYear, value: -offset, to: now)!
+            start = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: shifted))!
+            end = calendar.date(byAdding: .day, value: 7, to: start)!
+            title = offset == 0 ? "This Week" : "\(offset) Weeks Ago"
 
-            case .year:
-                let shifted = calendar.date(byAdding: .year, value: -offset, to: referenceDate)!
-                let start = calendar.date(from: calendar.dateComponents([.year], from: shifted))!
-                let end = calendar.date(byAdding: .year, value: 1, to: start)!
-                let title = offset == 0 ? "This Year" : "\(offset) Years Ago"
-                return (start, end, title)
-            }
-        }
+        case .month:
+            let shifted = calendar.date(byAdding: .month, value: -offset, to: now)!
+            start = calendar.date(from: calendar.dateComponents([.year, .month], from: shifted))!
+            end = calendar.date(byAdding: .month, value: 1, to: start)!
+            title = offset == 0 ? "This Month" : "\(offset) Months Ago"
 
-        let current = periodRange(offset: 0)
-        let target = periodRange(offset: offset)
-
-        let currentEnd = min(referenceDate, current.end)
-        let elapsed = max(0, currentEnd.timeIntervalSince(current.start))
-
-        let comparisonEnd: Date
-        if offset == 0 {
-            comparisonEnd = currentEnd
-        } else {
-            comparisonEnd = min(target.end, target.start.addingTimeInterval(elapsed))
+        case .year:
+            let shifted = calendar.date(byAdding: .year, value: -offset, to: now)!
+            start = calendar.date(from: calendar.dateComponents([.year], from: shifted))!
+            end = calendar.date(byAdding: .year, value: 1, to: start)!
+            title = offset == 0 ? "This Year" : "\(offset) Years Ago"
         }
 
         let sql = """
-        SELECT id, title, start_time, end_time, duration_minutes
+        SELECT id, title, start_time, end_time
         FROM activities
-        WHERE start_time < \(comparisonEnd.timeIntervalSince1970)
-          AND (end_time IS NULL OR end_time > \(target.start.timeIntervalSince1970));
+        WHERE start_time < \(end.timeIntervalSince1970)
+          AND COALESCE(end_time, \(now.timeIntervalSince1970)) > \(start.timeIntervalSince1970);
         """
 
         let rows = query(sql: sql)
@@ -594,13 +586,15 @@ class DatabaseManager {
             else { continue }
 
             let activityStart = Date(timeIntervalSince1970: startRaw)
-            let activityEnd = (row["end_time"] as? Double)
-                .map { Date(timeIntervalSince1970: $0) } ?? min(comparisonEnd, referenceDate)
+            let activityEnd = (row["end_time"] as? Double).map { Date(timeIntervalSince1970: $0) } ?? now
 
-            let clippedStart = max(activityStart, target.start)
-            let clippedEnd = min(activityEnd, comparisonEnd)
+            let minutes = overlapMinutes(
+                activityStart: activityStart,
+                activityEnd: activityEnd,
+                rangeStart: start,
+                rangeEnd: end
+            )
 
-            let minutes = max(0, Int(clippedEnd.timeIntervalSince(clippedStart) / 60))
             guard minutes > 0 else { continue }
 
             totalMinutes += minutes
@@ -610,8 +604,8 @@ class DatabaseManager {
                 firstActivity[activityTitle] = Activity(
                     id: id,
                     title: activityTitle,
-                    startTime: clippedStart,
-                    endTime: clippedEnd,
+                    startTime: activityStart,
+                    endTime: activityEnd,
                     durationMinutes: minutes
                 )
             }
@@ -619,15 +613,11 @@ class DatabaseManager {
 
         let activities = totalsByTitle
             .sorted { $0.value > $1.value }
-            .compactMap { activityTitle, minutes in
-                firstActivity[activityTitle].map { ($0, minutes) }
+            .compactMap { title, minutes in
+                firstActivity[title].map { ($0, minutes) }
             }
 
-        return StatsResult(
-            title: target.title,
-            total: totalMinutes,
-            activities: activities
-        )
+        return StatsResult(title: title, total: totalMinutes, activities: activities)
     }
 
     // Fetch the currently running activity (end_time = NULL)
@@ -778,63 +768,15 @@ class DatabaseManager {
             }
         }
     
-    // MARK: - Fetch activities for an arbitrary day (past or present)
-    func fetchActivities(for date: Date) -> [Activity] {
-        let calendar = Calendar.current
-        let dayStart = calendar.startOfDay(for: date)
-        let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart)!
-
-        let sql = """
-        SELECT id, title, start_time, end_time
-        FROM activities
-        WHERE start_time < \(dayEnd.timeIntervalSince1970)
-          AND (end_time IS NULL OR end_time > \(dayStart.timeIntervalSince1970))
-        ORDER BY start_time;
-        """
-
-        let rows = query(sql: sql)
-        var activities: [Activity] = []
-
-        for row in rows {
-            guard
-                let id = row["id"] as? Int,
-                let title = row["title"] as? String,
-                let startRaw = row["start_time"] as? Double
-            else { continue }
-
-            let activityStart = Date(timeIntervalSince1970: startRaw)
-            let activityEnd = (row["end_time"] as? Double)
-                .map { Date(timeIntervalSince1970: $0) } ?? dayEnd
-
-            // ✂️ Clip activity to this day
-            let clippedStart = max(activityStart, dayStart)
-            let clippedEnd = min(activityEnd, dayEnd)
-
-            let durationSeconds = clippedEnd.timeIntervalSince(clippedStart)
-            guard durationSeconds > 0 else { continue }
-            let durationMinutes = Int(durationSeconds / 60)
-
-            activities.append(
-                Activity(
-                    id: id,
-                    title: title,
-                    startTime: clippedStart,
-                    endTime: clippedEnd,
-                    durationMinutes: durationMinutes
-                )
-            )
-        }
-
-        return activities
-    }
-
     // MARK: - Fetch activities overlapping a time range (clipped to range)
     func fetchActivities(in start: Date, end: Date) -> [Activity] {
+        let now = Date()
+
         let sql = """
         SELECT id, title, start_time, end_time
         FROM activities
         WHERE start_time < \(end.timeIntervalSince1970)
-          AND (end_time IS NULL OR end_time > \(start.timeIntervalSince1970))
+          AND COALESCE(end_time, \(now.timeIntervalSince1970)) > \(start.timeIntervalSince1970)
         ORDER BY start_time;
         """
 
@@ -849,15 +791,13 @@ class DatabaseManager {
             else { continue }
 
             let activityStart = Date(timeIntervalSince1970: startRaw)
-            let activityEnd = (row["end_time"] as? Double)
-                .map { Date(timeIntervalSince1970: $0) } ?? min(end, Date())
+            let activityEnd = (row["end_time"] as? Double).map { Date(timeIntervalSince1970: $0) } ?? now
 
             let clippedStart = max(activityStart, start)
             let clippedEnd = min(activityEnd, end)
+            let minutes = max(0, Int(clippedEnd.timeIntervalSince(clippedStart) / 60))
 
-            let durationSeconds = clippedEnd.timeIntervalSince(clippedStart)
-            guard durationSeconds > 0 else { continue }
-            let durationMinutes = Int(durationSeconds / 60)
+            guard minutes > 0 else { continue }
 
             activities.append(
                 Activity(
@@ -865,7 +805,7 @@ class DatabaseManager {
                     title: title,
                     startTime: clippedStart,
                     endTime: clippedEnd,
-                    durationMinutes: durationMinutes
+                    durationMinutes: minutes
                 )
             )
         }

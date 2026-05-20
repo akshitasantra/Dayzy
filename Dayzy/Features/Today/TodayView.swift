@@ -218,7 +218,7 @@ struct TodayView: View {
         DatabaseManager.shared.endActivity(activity)
 
         currentActivity = nil
-        timeline = DatabaseManager.shared.fetchTodayActivities()
+        reloadForSelectedDate()
     }
 
     private func resolvedQuickStarts() -> [String] {
@@ -231,19 +231,25 @@ struct TodayView: View {
     }
     
     private func reloadForSelectedDate() {
+        let calendar = Calendar.current
+
+        let dayStart = calendar.startOfDay(for: selectedDate)
+        let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart)!
+
+        let all = DatabaseManager.shared.fetchActivities(in: dayStart, end: dayEnd)
+
         if isToday {
-            let all = DatabaseManager.shared.fetchTodayActivities()
             let running = DatabaseManager.shared.fetchCurrentActivity()
             currentActivity = running
+
             if let running {
                 timeline = all.filter { $0.id != running.id }
             } else {
                 timeline = all
             }
         } else {
-            timeline = DatabaseManager.shared.fetchActivities(for: selectedDate)
             currentActivity = nil
+            timeline = all
         }
     }
-
 }
