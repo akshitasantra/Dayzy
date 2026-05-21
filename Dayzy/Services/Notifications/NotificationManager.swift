@@ -50,7 +50,7 @@ class NotificationManager: ObservableObject {
 
         let content = UNMutableNotificationContent()
         content.title = "Dayzy Reminder"
-        content.body = "Don’t forget to log your day today."
+        content.body = "Don’t forget to log your day today!"
         content.sound = .default
 
         var dateComponents = DateComponents()
@@ -102,9 +102,9 @@ class NotificationManager: ObservableObject {
         content.sound = .default
 
         if gymMinutes >= 600 {
-            content.body = "You hit your 600 minute Gym goal this month. Nice work."
+            content.body = "You hit your 600 minute Gym goal this month! Nice work :)"
         } else {
-            content.body = "You logged \(formatMinutes(gymMinutes)) at Gym this month — \(formatMinutes(remaining)) away from 600."
+            content.body = "You logged \(formatMinutes(gymMinutes)) at Gym this month — \(formatMinutes(remaining)) away from 600"
         }
 
         let triggerDate = calendar.dateComponents(
