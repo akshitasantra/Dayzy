@@ -797,7 +797,7 @@ class DatabaseManager {
             let clippedEnd = min(activityEnd, end)
             let minutes = max(0, Int(clippedEnd.timeIntervalSince(clippedStart) / 60))
 
-            guard minutes > 0 else { continue }
+            guard clippedEnd >= clippedStart else { continue }
 
             activities.append(
                 Activity(
