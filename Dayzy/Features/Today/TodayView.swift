@@ -222,11 +222,40 @@ struct TodayView: View {
     }
 
     private func resolvedQuickStarts() -> [String] {
-        let top = DatabaseManager.shared.topQuickStartActivities()
 
-        guard top.count < 4 else { return top }
+        let calendar = Calendar.current
+        let now = Date()
 
-        let remaining = defaultQuickStarts.filter { !top.contains($0) }
+        let oneWeekAgo = calendar.date(byAdding: .day, value: -7, to: now)!
+        let oneMonthAgo = calendar.date(byAdding: .month, value: -1, to: now)!
+        let oneYearAgo = calendar.date(byAdding: .year, value: -1, to: now)!
+
+        var top = DatabaseManager.shared.topQuickStartActivities(
+            since: oneWeekAgo
+        )
+
+        if top.count < 4 {
+            top = DatabaseManager.shared.topQuickStartActivities(
+                since: oneMonthAgo
+            )
+        }
+
+        if top.count < 4 {
+            top = DatabaseManager.shared.topQuickStartActivities(
+                since: oneYearAgo
+            )
+        }
+
+        if top.count < 4 {
+            top = DatabaseManager.shared.topQuickStartActivities(
+                since: Date.distantPast
+            )
+        }
+
+        let remaining = defaultQuickStarts.filter {
+            !top.contains($0)
+        }
+
         return top + remaining.prefix(4 - top.count)
     }
     

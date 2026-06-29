@@ -1,19 +1,21 @@
 import SwiftUI
 
+import SwiftUI
+
 @main
 struct DayzyApp: App {
 
-    init() {
-        NotificationManager.shared.requestAuthorization()
-
-        NotificationManager.shared.scheduleMonthlyGymSummary()
-
-        NotificationManager.shared.scheduleDailyLoggingReminder()
-    }
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .onChange(of: scenePhase) { phase in
+                    if phase == .active {
+                        NotificationManager.shared.checkAuthorization()
+                        NotificationManager.shared.scheduleMonthlyGymSummary()
+                    }
+                }
         }
     }
 }

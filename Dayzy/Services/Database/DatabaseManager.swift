@@ -522,21 +522,38 @@ class DatabaseManager {
         }
     }
 
-    func topQuickStartActivities(limit: Int = 4) -> [String] {
-        let sql = """
-        SELECT
-            title,
-            COUNT(*) AS usage_count,
-            MAX(start_time) AS last_used
-        FROM activities
-        GROUP BY title
-        ORDER BY usage_count DESC, last_used DESC
-        LIMIT \(limit);
-        """
+    func topQuickStartActivities(
+        since: Date,
+        limit: Int = 4
+    ) -> [String] {
 
-        let rows = query(sql: sql)
+        let activities = fetchActivities(
+            in: since,
+            end: Date()
+        )
 
-        return rows.compactMap { $0["title"] as? String }
+        let grouped = Dictionary(
+            grouping: activities,
+            by: \.title
+        )
+
+        return grouped
+            .map { title, activities in
+                (
+                    title: title,
+                    count: activities.count,
+                    lastUsed: activities.map(\.startTime).max() ?? .distantPast
+                )
+            }
+            .sorted {
+                if $0.count != $1.count {
+                    return $0.count > $1.count
+                }
+
+                return $0.lastUsed > $1.lastUsed
+            }
+            .prefix(limit)
+            .map(\.title)
     }
     
     func stats(for scope: WrappedScope, offset: Int) -> StatsResult {

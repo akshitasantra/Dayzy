@@ -10,7 +10,7 @@ struct PreferencesCard: View {
     @ObservedObject private var notificationManager = NotificationManager.shared
 
     @AppStorage(AppSound.enabledKey) private var soundEnabled = true
-
+    
     private var cardColor: Color { Color(hex: themeManager.theme.cardColorHex) }
     private var primaryColor: Color { Color(hex: themeManager.theme.primaryColorHex) }
 
@@ -37,7 +37,11 @@ struct PreferencesCard: View {
                 
                 PreferenceButton(
                     title: "Notifications",
-                    iconName: notificationManager.isAuthorized ? "notification" : "mute-notification",
+                    iconName:
+                        notificationManager.notificationsEnabled &&
+                        notificationManager.isAuthorized
+                            ? "notification"
+                            : "mute-notification",
                     backgroundColor: cardColor,
                     borderColor: primaryColor
                 ) {

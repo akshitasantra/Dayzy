@@ -103,22 +103,24 @@ private extension ContentView {
 
     func editActivitySheet(activity: Activity) -> some View {
         EditActivitySheet(activity: activity) { title, start, end in
-            let duration = calculateDuration(start: start, end: end)
+            let isRunning = (currentActivity?.id == activity.id) || activity.endTime == nil
+
+            let newEnd: Date? = isRunning ? nil : end
+            let newDuration: Int? = isRunning ? nil : calculateDuration(start: start, end: end)
 
             DatabaseManager.shared.updateActivity(
                 id: activity.id,
                 newTitle: title,
                 newStart: start,
-                newEnd: end,
-                newDuration: duration
+                newEnd: newEnd,
+                newDuration: newDuration
             )
 
-            // Sync currentActivity if this is the running activity
             if currentActivity?.id == activity.id {
                 currentActivity?.title = title
                 currentActivity?.startTime = start
-                currentActivity?.endTime = end
-                currentActivity?.durationMinutes = duration
+                currentActivity?.endTime = nil
+                currentActivity?.durationMinutes = nil
             }
 
             reloadToday()

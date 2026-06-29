@@ -7,13 +7,27 @@ class NotificationManager: ObservableObject {
     static let shared = NotificationManager()
 
     @Published var isAuthorized: Bool = false
-    @AppStorage("notificationsEnabled") private var notificationsEnabled = true
-
-    private let gymMonthlySummaryID = "monthly.gym.summary"
+    @Published var notificationsEnabled: Bool {
+        didSet {
+            UserDefaults.standard.set(
+                notificationsEnabled,
+                forKey: "notificationsEnabled"
+            )
+        }
+    }
 
     private init() {
+        if UserDefaults.standard.object(forKey: "notificationsEnabled") == nil {
+            notificationsEnabled = true
+        } else {
+            notificationsEnabled =
+                UserDefaults.standard.bool(forKey: "notificationsEnabled")
+        }
+
         checkAuthorization()
     }
+
+    private let gymMonthlySummaryID = "monthly.gym.summary"
 
     func requestAuthorization() {
         UNUserNotificationCenter.current().requestAuthorization(
@@ -21,7 +35,14 @@ class NotificationManager: ObservableObject {
         ) { granted, _ in
             DispatchQueue.main.async {
                 self.isAuthorized = granted
-                self.notificationsEnabled = granted
+
+                if granted {
+                    self.notificationsEnabled = true
+                    self.scheduleDailyLoggingReminder()
+                    self.scheduleMonthlyGymSummary()
+                } else {
+                    self.notificationsEnabled = false
+                }
             }
         }
     }
@@ -29,7 +50,18 @@ class NotificationManager: ObservableObject {
     func checkAuthorization() {
         UNUserNotificationCenter.current().getNotificationSettings { settings in
             DispatchQueue.main.async {
-                self.isAuthorized = settings.authorizationStatus == .authorized
+                let authorized =
+                    settings.authorizationStatus == .authorized
+
+                self.isAuthorized = authorized
+
+                if authorized && self.notificationsEnabled {
+                    self.scheduleDailyLoggingReminder()
+                    self.scheduleMonthlyGymSummary()
+                } else {
+                    self.cancelDailyLoggingReminder()
+                    self.cancelMonthlyGymSummary()
+                }
             }
         }
     }
@@ -37,7 +69,6 @@ class NotificationManager: ObservableObject {
     func toggleNotifications() {
         if notificationsEnabled {
             notificationsEnabled = false
-            isAuthorized = false
             cancelMonthlyGymSummary()
             cancelDailyLoggingReminder()
         } else {
@@ -46,7 +77,7 @@ class NotificationManager: ObservableObject {
     }
 
     func scheduleDailyLoggingReminder() {
-        guard notificationsEnabled else { return }
+        guard notificationsEnabled && isAuthorized else { return }
 
         let content = UNMutableNotificationContent()
         content.title = "Dayzy Reminder"
@@ -84,7 +115,7 @@ class NotificationManager: ObservableObject {
     }
     
     func scheduleMonthlyGymSummary() {
-        guard notificationsEnabled else { return }
+        guard notificationsEnabled && isAuthorized else { return }
 
         let calendar = Calendar.current
         let now = Date()
